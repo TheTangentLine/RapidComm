@@ -1,5 +1,230 @@
-.vscode/
+# ================================ Build Artifacts ====================================
 
-.DS_Store
+# Build directory
+build/
+bin/
+obj/
+out/
 
+# Executable files
 http-ftp-server
+http-ftp-server.exe
+*.exe
+*.out
+*.app
+
+# Object files
+*.o
+*.obj
+*.lo
+*.slo
+*.ko
+*.elf
+
+# Libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+*.la
+
+# ================================ CMake ============================================
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+*.cmake
+
+# CMake build directories
+cmake-build-*/
+
+# ================================ Make =============================================
+
+# Make artifacts
+Makefile.in
+.deps/
+.libs/
+
+# ================================ IDE and Editors ==================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Visual Studio
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CLion
+.idea/
+cmake-build-*/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.moved-aside
+DerivedData/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+
+# ================================ Operating System ==================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ================================ Temporary Files ===================================
+
+# Logs
+*.log
+logs/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# ================================ User Data ======================================
+
+# Uploaded files (contains user data - should not be committed)
+uploads/
+uploads/*
+*.uploaded
+
+# Test files
+test-upload.*
+test_*
+*_test
+*.test
+
+# ================================ Dependencies ===================================
+
+# Package managers
+node_modules/
+package-lock.json
+yarn.lock
+
+# Conan
+conaninfo.txt
+conanbuildinfo.*
+conandata.yml
+
+# vcpkg
+vcpkg_installed/
+
+# ================================ Development ====================================
+
+# Profiling data
+*.prof
+*.gprof
+gmon.out
+
+# Debugging
+*.dSYM/
+*.stackdump
+
+# Sanitizer output
+*.san
+
+# Valgrind
+vgcore.*
+callgrind.out.*
+massif.out.*
+
+# ================================ Documentation ==================================
+
+# Generated documentation
+docs/html/
+docs/latex/
+*.doxygen_sqlite3
+
+# ================================ Miscellaneous ==================================
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# SSL certificates (if any)
+*.pem
+*.key
+*.crt
+*.csr
+
+# Configuration overrides
+config.local.*
+settings.local.*

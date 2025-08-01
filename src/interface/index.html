@@ -517,12 +517,7 @@
     <div class="upload-container">
       <h1>Upload Your File</h1>
 
-      <form
-        class="upload-form"
-        action="/upload"
-        method="POST"
-        enctype="multipart/form-data"
-      >
+      <form class="upload-form" method="POST" enctype="multipart/form-data">
         <div class="file-input-wrapper">
           <label for="file" class="file-input-label" id="fileLabel">
             <svg
@@ -579,6 +574,23 @@
     </div>
 
     <script>
+      // ----------------------------- Configuration -------------------------------->
+
+      // Get backend URL dynamically based on current window location
+      function getBackendUrl() {
+        const protocol = window.location.protocol; // http: or https:
+        const hostname = window.location.hostname; // localhost or domain
+        const backendPort = "8080"; // Backend server port
+        return `${protocol}//${hostname}:${backendPort}`;
+      }
+
+      // Get upload endpoint URL
+      function getUploadUrl() {
+        return `${getBackendUrl()}/upload`;
+      }
+
+      // ----------------------------- Particles Animation ------------------------->
+
       // Create floating particles
       function createParticles() {
         const particles = document.getElementById("particles");
@@ -651,7 +663,7 @@
         }
       });
 
-      // Form submission with progress simulation
+      // Form submission with real HTTP request
       document
         .querySelector(".upload-form")
         .addEventListener("submit", function (e) {
@@ -666,22 +678,58 @@
           submitBtn.textContent = "Uploading...";
           progressContainer.style.display = "block";
 
-          // Simulate upload progress
-          let progress = 0;
-          const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress > 100) progress = 100;
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append("file", fileInput.files[0]);
 
-            progressBar.style.width = progress + "%";
+          // Create XMLHttpRequest for upload progress tracking
+          const xhr = new XMLHttpRequest();
 
-            if (progress >= 100) {
-              clearInterval(interval);
-              setTimeout(() => {
-                showMessage("File uploaded successfully!", "success");
-                resetForm();
-              }, 500);
+          // Track upload progress
+          xhr.upload.addEventListener("progress", function (e) {
+            if (e.lengthComputable) {
+              const percentComplete = (e.loaded / e.total) * 100;
+              progressBar.style.width = percentComplete + "%";
             }
-          }, 200);
+          });
+
+          // Handle response
+          xhr.addEventListener("load", function () {
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.status === "success") {
+                  showMessage("File uploaded successfully!", "success");
+                } else {
+                  showMessage("Upload failed: " + response.message, "error");
+                }
+              } catch (e) {
+                showMessage(
+                  "Upload completed but response was invalid",
+                  "success"
+                );
+              }
+            } else {
+              showMessage("Upload failed: Server error " + xhr.status, "error");
+            }
+            resetForm();
+          });
+
+          // Handle network errors
+          xhr.addEventListener("error", function () {
+            const backendUrl = getBackendUrl();
+            showMessage(
+              `Upload failed: Network error. Make sure the backend server is running at ${backendUrl}`,
+              "error"
+            );
+            resetForm();
+          });
+
+          // Send the request
+          const uploadUrl = getUploadUrl();
+          console.log(`[Frontend] Uploading to: ${uploadUrl}`);
+          xhr.open("POST", uploadUrl);
+          xhr.send(formData);
         });
 
       // Show message
@@ -705,9 +753,25 @@
         }, 3000);
       }
 
-      // Initialize
-      createParticles();
-      submitBtn.disabled = true;
+      // ----------------------------- Initialization --------------------------->
+
+      // Initialize application
+      function initializeApp() {
+        createParticles();
+        submitBtn.disabled = true;
+
+        // Display server configuration in console
+        console.log("========================================");
+        console.log("  HTTP-FTP File Upload Client");
+        console.log("========================================");
+        console.log(`Frontend URL: ${window.location.origin}`);
+        console.log(`Backend URL:  ${getBackendUrl()}`);
+        console.log(`Upload URL:   ${getUploadUrl()}`);
+        console.log("========================================");
+      }
+
+      // Start the application
+      initializeApp();
     </script>
   </body>
 </html>
