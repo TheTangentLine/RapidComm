@@ -56,15 +56,16 @@ void HttpService::sendResponse(const std::string &request)
 std::string HttpService::handleRoute(std::string input = "/")
 {
     std::string content = "";
+    std::string route = "";
     if (input == "/")
     {
-        const std::string route = "../interface/index.html";
-        content = getHtmlContent(route);
+        route = "../interface/index.html";
     }
     else
     {
-        content = "<html><body><h1>There is nothing to explore here</h1></body></html>";
+        route = "../interface/nothingToExplore.html";
     }
+    content = getHtmlContent(route);
     return content;
 }
 
