@@ -1,8 +1,10 @@
 #include "HttpService.hpp"
+#include "../ftp/FtpService.hpp"
 
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 #include <unistd.h>
 #include <cstring>
@@ -11,59 +13,136 @@
 
 // ----------------------------- Constructor --------------------------------->
 
-HttpService::HttpService(int clientSocket) : clientSocket(clientSocket) {}
+HttpService::HttpService(int clientSocket, bool isFrontend) 
+    : clientSocket(clientSocket), isFrontend(isFrontend) {}
 
 // ----------------------------- Handle request ------------------------------->
 
 void HttpService::handleRequest()
 {
     std::string request = parseRequest();
-    std::cout << "Request received:\n"
-              << request << std::endl;
+    std::cout << "[" << (isFrontend ? "Frontend" : "Backend") << "] Request received" << std::endl;
 
-    sendResponse(request);
+    std::string method = extractMethod(request);
+    std::string route = extractRoute(request);
+    
+    std::cout << "[" << (isFrontend ? "Frontend" : "Backend") << "] " << method << " " << route << std::endl;
+    
+    // Handle OPTIONS requests for CORS
+    if (method == "OPTIONS") {
+        sendCorsResponse();
+        return;
+    }
+    
+    // Frontend server - serve static files
+    if (isFrontend) {
+        std::string response = "HTTP/1.1 200 OK\r\n";
+        response += "Content-Type: text/html\r\n";
+        response += "Connection: close\r\n\r\n";
+        response += handleRoute(route);
+        
+        send(clientSocket, response.c_str(), response.length(), 0);
+    }
+    // Backend server - handle API requests
+    else {
+        if (method == "POST" && route == "/upload") {
+            handleFileUpload(request);
+        } else {
+            sendErrorResponse(404, "Endpoint not found");
+        }
+    }
 }
 
 std::string HttpService::parseRequest()
 {
-    char buffer[1024];
-    memset(buffer, 0, sizeof(buffer));
-
-    int bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-    if (bytesRead < 0)
-    {
-        std::cerr << "Error reading request!" << std::endl;
-        return "";
+    std::string request;
+    char buffer[8192]; // Smaller chunks for streaming
+    
+    // First, read the headers to get Content-Length
+    std::string headers;
+    size_t headerEnd = std::string::npos;
+    
+    while (headerEnd == std::string::npos) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
+        
+        if (bytesRead <= 0) {
+            std::cerr << "[Backend] Error reading request headers!" << std::endl;
+            return "";
+        }
+        
+        request.append(buffer, bytesRead);
+        headerEnd = request.find("\r\n\r\n");
+        
+        // Prevent infinite loop with very large headers
+        if (request.size() > 1024 * 1024) { // 1MB header limit
+            std::cerr << "[Backend] Headers too large!" << std::endl;
+            return "";
+        }
     }
-
-    return std::string(buffer);
+    
+    // Parse Content-Length from headers
+    size_t contentLengthPos = request.find("Content-Length:");
+    if (contentLengthPos == std::string::npos) {
+        contentLengthPos = request.find("content-length:");
+    }
+    
+    size_t totalContentLength = 0;
+    if (contentLengthPos != std::string::npos) {
+        size_t valueStart = request.find(":", contentLengthPos) + 1;
+        size_t valueEnd = request.find("\r\n", valueStart);
+        if (valueEnd != std::string::npos) {
+            std::string lengthStr = request.substr(valueStart, valueEnd - valueStart);
+            // Trim whitespace
+            lengthStr.erase(0, lengthStr.find_first_not_of(" \t"));
+            lengthStr.erase(lengthStr.find_last_not_of(" \t") + 1);
+            totalContentLength = std::stoull(lengthStr);
+            
+            std::cout << "[Backend] Content-Length: " << totalContentLength << " bytes" << std::endl;
+        }
+    }
+    
+    // Calculate how much body we still need to read
+    size_t headersSize = headerEnd + 4; // +4 for \r\n\r\n
+    size_t bodyAlreadyRead = request.size() - headersSize;
+    size_t bodyStillNeeded = totalContentLength - bodyAlreadyRead;
+    
+    std::cout << "[Backend] Headers size: " << headersSize << ", Body already read: " << bodyAlreadyRead << ", Still needed: " << bodyStillNeeded << std::endl;
+    
+    // Read remaining body if needed
+    while (bodyStillNeeded > 0) {
+        size_t chunkSize = std::min(bodyStillNeeded, sizeof(buffer) - 1);
+        memset(buffer, 0, sizeof(buffer));
+        
+        int bytesRead = read(clientSocket, buffer, chunkSize);
+        if (bytesRead <= 0) {
+            std::cerr << "[Backend] Error reading request body!" << std::endl;
+            break;
+        }
+        
+        request.append(buffer, bytesRead);
+        bodyStillNeeded -= bytesRead;
+        
+        std::cout << "[Backend] Read " << bytesRead << " bytes, " << bodyStillNeeded << " remaining" << std::endl;
+    }
+    
+    std::cout << "[Backend] Total request size: " << request.size() << " bytes" << std::endl;
+    return request;
 }
 
 // ---------------------------- Handle response ------------------------------>
 
-void HttpService::sendResponse(const std::string &request)
-{
-    std::string route = extractRoute(request);
-
-    std::string response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Connection: close\r\n\r\n";
-    response += handleRoute(route);
-
-    send(clientSocket, response.c_str(), response.length(), 0);
-}
-
-std::string HttpService::handleRoute(std::string input = "/")
+std::string HttpService::handleRoute(std::string input)
 {
     std::string content = "";
     std::string route = "";
     if (input == "/")
     {
-        route = "../interface/index.html";
+        route = "../../src/interface/index.html";
     }
     else
     {
-        route = "../interface/nothingToExplore.html";
+        route = "../../src/interface/nothingToExplore.html";
     }
     content = getHtmlContent(route);
     return content;
@@ -85,6 +164,16 @@ std::string HttpService::extractRoute(const std::string &request)
     return route;
 }
 
+std::string HttpService::extractMethod(const std::string &request)
+{
+    std::stringstream ss(request);
+    std::string requestLine;
+    std::getline(ss, requestLine);
+    
+    size_t methodEnd = requestLine.find(" ");
+    return requestLine.substr(0, methodEnd);
+}
+
 std::string HttpService::getHtmlContent(const std::string &route)
 {
     std::ifstream file(route);
@@ -92,6 +181,250 @@ std::string HttpService::getHtmlContent(const std::string &route)
     buffer << file.rdbuf();
 
     return buffer.str();
+}
+
+// ---------------------------- File Upload Handling ------------------------->
+
+void HttpService::handleFileUpload(const std::string &request)
+{
+    std::cout << "[Backend] Processing file upload..." << std::endl;
+    
+    std::string filename;
+    std::vector<char> fileData;
+    
+    std::string result = parseMultipartData(request, filename, fileData);
+    
+    if (result == "success") {
+        std::cout << "[Backend] File upload successful: " << filename << " (" << fileData.size() << " bytes)" << std::endl;
+        
+        // Send file to FTP server
+        FtpService ftpClient; // Client mode constructor
+        bool ftpSuccess = ftpClient.uploadFileToServer(filename, fileData);
+        
+        if (ftpSuccess) {
+            std::cout << "[Backend] File successfully sent to FTP server" << std::endl;
+            sendJsonResponse("{\"status\":\"success\",\"message\":\"File uploaded and stored successfully\",\"filename\":\"" + filename + "\"}");
+        } else {
+            std::cerr << "[Backend] Failed to send file to FTP server" << std::endl;
+            sendJsonResponse("{\"status\":\"warning\",\"message\":\"File uploaded but FTP storage failed\",\"filename\":\"" + filename + "\"}", 202);
+        }
+    } else {
+        std::cout << "[Backend] File upload failed: " << result << std::endl;
+        sendErrorResponse(400, result);
+    }
+}
+
+std::string HttpService::parseMultipartData(const std::string &request, std::string &filename, std::vector<char> &fileData)
+{
+    // Parse headers to get content type and boundary
+    auto headers = parseHeaders(request);
+    
+    auto contentTypeIt = headers.find("content-type");
+    if (contentTypeIt == headers.end()) {
+        std::cout << "[Backend] Debug: Content-Type header not found" << std::endl;
+        return "Missing Content-Type header";
+    }
+    
+    std::string boundary = getBoundary(contentTypeIt->second);
+    if (boundary.empty()) {
+        std::cout << "[Backend] Debug: Boundary extraction failed from: " << contentTypeIt->second << std::endl;
+        return "Invalid multipart boundary";
+    }
+    
+    std::cout << "[Backend] Debug: Boundary found: " << boundary << std::endl;
+    
+    // Get request body
+    std::string body = getRequestBody(request);
+    std::cout << "[Backend] Debug: Body size: " << body.size() << " bytes" << std::endl;
+    
+    // Find file data in multipart body
+    std::string boundaryDelim = "--" + boundary;
+    std::cout << "[Backend] Debug: Looking for boundary: " << boundaryDelim << std::endl;
+    
+    // Look for file form field (try different variations)
+    size_t fileStart = std::string::npos;
+    std::vector<std::string> fieldPatterns = {
+        "Content-Disposition: form-data; name=\"file\"",
+        "content-disposition: form-data; name=\"file\"",
+        "Content-Disposition: form-data; name=file",
+        "content-disposition: form-data; name=file"
+    };
+    
+    for (const auto& pattern : fieldPatterns) {
+        fileStart = body.find(pattern);
+        if (fileStart != std::string::npos) {
+            std::cout << "[Backend] Debug: Found file field with pattern: " << pattern << std::endl;
+            break;
+        }
+    }
+    
+    if (fileStart == std::string::npos) {
+        std::cout << "[Backend] Debug: File field not found. Body preview (first 500 chars):" << std::endl;
+        std::cout << body.substr(0, 500) << std::endl;
+        return "File field not found";
+    }
+    
+    // Extract filename
+    size_t filenameStart = body.find("filename=\"", fileStart);
+    if (filenameStart == std::string::npos) {
+        filenameStart = body.find("filename=", fileStart);
+        if (filenameStart != std::string::npos) {
+            filenameStart += 9; // Length of "filename="
+            size_t filenameEnd = body.find_first_of(" \r\n", filenameStart);
+            if (filenameEnd != std::string::npos) {
+                filename = body.substr(filenameStart, filenameEnd - filenameStart);
+            }
+        } else {
+            std::cout << "[Backend] Debug: Filename not found in multipart data" << std::endl;
+            return "Filename not found";
+        }
+    } else {
+        filenameStart += 10; // Length of "filename=\""
+        size_t filenameEnd = body.find("\"", filenameStart);
+        if (filenameEnd == std::string::npos) {
+            std::cout << "[Backend] Debug: Invalid filename format" << std::endl;
+            return "Invalid filename format";
+        }
+        filename = body.substr(filenameStart, filenameEnd - filenameStart);
+    }
+    
+    std::cout << "[Backend] Debug: Extracted filename: " << filename << std::endl;
+    
+    // Find file content start (after headers)
+    size_t dataStart = body.find("\r\n\r\n", fileStart);
+    if (dataStart == std::string::npos) {
+        // Try alternative line endings
+        dataStart = body.find("\n\n", fileStart);
+        if (dataStart != std::string::npos) {
+            dataStart += 2;
+        } else {
+            std::cout << "[Backend] Debug: File data start not found" << std::endl;
+            return "File data not found";
+        }
+    } else {
+        dataStart += 4; // Skip \r\n\r\n
+    }
+    
+    std::cout << "[Backend] Debug: File data starts at position: " << dataStart << std::endl;
+    
+    // Find file content end (next boundary) - try multiple patterns
+    size_t dataEnd = std::string::npos;
+    std::vector<std::string> endPatterns = {
+        "\r\n--" + boundary,
+        "\n--" + boundary,
+        "--" + boundary
+    };
+    
+    for (const auto& pattern : endPatterns) {
+        dataEnd = body.find(pattern, dataStart);
+        if (dataEnd != std::string::npos) {
+            std::cout << "[Backend] Debug: Found data end with pattern: " << pattern << std::endl;
+            break;
+        }
+    }
+    
+    if (dataEnd == std::string::npos) {
+        std::cout << "[Backend] Debug: File data end not found. Body end preview (last 200 chars):" << std::endl;
+        size_t previewStart = body.size() > 200 ? body.size() - 200 : 0;
+        std::cout << body.substr(previewStart) << std::endl;
+        return "File data end not found";
+    }
+    
+    // Extract file data
+    size_t fileSize = dataEnd - dataStart;
+    std::cout << "[Backend] Debug: File size: " << fileSize << " bytes" << std::endl;
+    
+    if (fileSize > 0) {
+        fileData.assign(body.begin() + dataStart, body.begin() + dataEnd);
+        std::cout << "[Backend] Debug: Successfully extracted file data" << std::endl;
+    } else {
+        std::cout << "[Backend] Debug: File size is 0 or negative" << std::endl;
+        return "Invalid file size";
+    }
+    
+    return "success";
+}
+
+std::string HttpService::getBoundary(const std::string &contentType)
+{
+    size_t boundaryPos = contentType.find("boundary=");
+    if (boundaryPos == std::string::npos) {
+        return "";
+    }
+    
+    return contentType.substr(boundaryPos + 9);
+}
+
+// ---------------------------- Helper Functions ------------------------------>
+
+void HttpService::sendCorsResponse()
+{
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Access-Control-Allow-Origin: *\r\n";
+    response += "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+    response += "Access-Control-Allow-Headers: Content-Type\r\n";
+    response += "Connection: close\r\n\r\n";
+    
+    send(clientSocket, response.c_str(), response.length(), 0);
+}
+
+void HttpService::sendJsonResponse(const std::string &json, int statusCode)
+{
+    std::string statusText = (statusCode == 200) ? "OK" : "Error";
+    
+    std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + statusText + "\r\n";
+    response += "Content-Type: application/json\r\n";
+    response += "Access-Control-Allow-Origin: *\r\n";
+    response += "Connection: close\r\n\r\n";
+    response += json;
+    
+    send(clientSocket, response.c_str(), response.length(), 0);
+}
+
+void HttpService::sendErrorResponse(int statusCode, const std::string &message)
+{
+    std::string json = "{\"status\":\"error\",\"message\":\"" + message + "\"}";
+    sendJsonResponse(json, statusCode);
+}
+
+std::map<std::string, std::string> HttpService::parseHeaders(const std::string &request)
+{
+    std::map<std::string, std::string> headers;
+    std::stringstream ss(request);
+    std::string line;
+    
+    // Skip request line
+    std::getline(ss, line);
+    
+    // Parse headers
+    while (std::getline(ss, line) && line != "\r") {
+        size_t colonPos = line.find(':');
+        if (colonPos != std::string::npos) {
+            std::string key = line.substr(0, colonPos);
+            std::string value = line.substr(colonPos + 1);
+            
+            // Convert key to lowercase and trim whitespace
+            std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+            
+            // Trim leading/trailing whitespace from value
+            value.erase(0, value.find_first_not_of(" \t"));
+            value.erase(value.find_last_not_of(" \t\r") + 1);
+            
+            headers[key] = value;
+        }
+    }
+    
+    return headers;
+}
+
+std::string HttpService::getRequestBody(const std::string &request)
+{
+    size_t bodyStart = request.find("\r\n\r\n");
+    if (bodyStart == std::string::npos) {
+        return "";
+    }
+    
+    return request.substr(bodyStart + 4);
 }
 
 // ---------------------------- Stop listening ------------------------------>
