@@ -484,26 +484,3 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software.
 ```
 
-## 🙏 Acknowledgments
-
-- **C++17 Standard Library** for robust file system operations
-- **BSD Sockets** for reliable network communication
-- **Modern CSS** techniques for responsive design
-- **Open Source Community** for inspiration and best practices
-
-## 📞 Support
-
-- **🐛 Bug Reports**: [Create an issue](https://github.com/yourusername/http-ftp-server/issues)
-- **💡 Feature Requests**: [Discussion board](https://github.com/yourusername/http-ftp-server/discussions)
-- **📧 Contact**: [your.email@example.com](mailto:your.email@example.com)
-- **📚 Documentation**: [Wiki](https://github.com/yourusername/http-ftp-server/wiki)
-
----
-
-<div align="center">
-  <h3>🚀 Happy file uploading!</h3>
-  <p><em>Built with ❤️ using modern C++17</em></p>
-  
-  [![GitHub stars](https://img.shields.io/github/stars/yourusername/http-ftp-server.svg?style=social)](https://github.com/yourusername/http-ftp-server/stargazers)
-  [![GitHub forks](https://img.shields.io/github/forks/yourusername/http-ftp-server.svg?style=social)](https://github.com/yourusername/http-ftp-server/network)
-</div>
