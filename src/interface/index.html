@@ -809,7 +809,7 @@
           submitBtn.textContent = "Preparing upload...";
           progressContainer.style.display = "block";
 
-                      try {
+          try {
             // Create FormData for fast file upload
             const formData = new FormData();
             formData.append("file", selectedFile);
@@ -864,18 +864,18 @@
               if (xhr.status === 200) {
                 try {
                   const response = JSON.parse(xhr.responseText);
-                                     if (response.status === "success") {
-                     const fileType = response.type || "file";
-                     const fileSize = response.size
-                       ? ` (${formatFileSize(response.size)})`
-                       : "";
-                     const message = `${response.message}${fileSize} ✅ Upload complete`;
-                     showMessage(message, "success");
+                  if (response.status === "success") {
+                    const fileType = response.type || "file";
+                    const fileSize = response.size
+                      ? ` (${formatFileSize(response.size)})`
+                      : "";
+                    const message = `${response.message}${fileSize} ✅ Upload complete`;
+                    showMessage(message, "success");
 
-                     // Log successful upload details
-                     console.log(
-                       `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Status: ✅ SUCCESS`
-                     );
+                    // Log successful upload details
+                    console.log(
+                      `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Status: ✅ SUCCESS`
+                    );
                   } else {
                     showMessage("Upload failed: " + response.message, "error");
                   }

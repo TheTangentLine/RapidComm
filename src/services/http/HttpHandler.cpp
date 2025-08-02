@@ -1,5 +1,6 @@
 #include "HttpHandler.hpp"
 #include "../storage/StorageService.hpp"
+#include "../config/ConfigManager.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -229,8 +230,10 @@ void HttpHandler::handleFileUpload(const std::string &request)
             std::cout << COLOR_YELLOW << "[Backend] Large video file detected, using optimized processing..." << COLOR_RESET << std::endl;
         }
         
-        // Save file using storage service
-        StorageService storage;
+        // Save file using storage service with config
+        ConfigManager config;
+        std::string storageDir = config.getStorageDirectory();
+        StorageService storage(storageDir);
         auto saveSuccess = storage.saveFileWithVerification(filename, fileData);
         
         if (saveSuccess.first) {
