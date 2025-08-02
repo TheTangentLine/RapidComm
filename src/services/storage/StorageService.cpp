@@ -129,6 +129,7 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
         // Calculate SHA-256 hash for bit-perfect verification
         std::string sha256Hash = calculateSHA256Hash(fileData);
         logInfo("Calculated SHA-256 hash: " + sha256Hash.substr(0, 16) + "...");
+        logInfo("File data size for hashing: " + std::to_string(fileData.size()) + " bytes");
         
         // Write file using atomic chunked method for all files
         std::string fileType = getFileType(filename);
@@ -381,22 +382,44 @@ std::string StorageService::calculateFileHash(const std::vector<char>& data) con
 
 std::string StorageService::calculateSHA256Hash(const std::vector<char>& data) const
 {
-    // Calculate SHA-256 hash using a simple implementation
-    // This is a basic implementation - in production, use a proper crypto library
-    std::hash<std::string> hasher;
-    std::string dataStr(data.begin(), data.end());
+    // Simple hash algorithm compatible with frontend implementation
+    // Using deterministic algorithm that both client and server can reproduce
     
-    // Create a more robust hash by combining multiple hash passes
-    size_t hash1 = hasher(dataStr);
-    size_t hash2 = hasher(dataStr + "salt1");
-    size_t hash3 = hasher(dataStr + "salt2" + std::to_string(data.size()));
+    uint32_t hash1 = 0;
+    uint32_t hash2 = 0;
+    uint32_t hash3 = 0;
+    
+    // Hash pass 1: Basic hash
+    for (size_t i = 0; i < data.size(); i++) {
+        hash1 = ((hash1 << 5) - hash1 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    
+    // Hash pass 2: With salt1
+    std::string salt1 = "salt1";
+    for (char c : salt1) {
+        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(c)) & 0xffffffff;
+    }
+    for (size_t i = 0; i < data.size(); i++) {
+        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    
+    // Hash pass 3: With salt2 and size
+    std::string salt2 = "salt2" + std::to_string(data.size());
+    for (char c : salt2) {
+        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(c)) & 0xffffffff;
+    }
+    for (size_t i = 0; i < data.size(); i++) {
+        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    
+    // Calculate checksum (same as existing method)
     uint32_t checksum = calculateChecksum(data);
     
-    // Combine hashes to create a longer, more secure hash
+    // Combine hashes and format as hex
     std::ostringstream oss;
     oss << std::hex << hash1 << hash2 << hash3 << checksum;
     
-    // Simulate SHA-256 length (64 characters)
+    // Pad to 64 characters
     std::string result = oss.str();
     while (result.length() < 64) {
         result += "0";

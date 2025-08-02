@@ -204,6 +204,11 @@ void HttpHandler::handleFileUpload(const std::string &request)
     std::string result = parseMultipartData(request, filename, fileData, originalHash, originalSize, timestamp);
     
     if (result == "success") {
+        // Debug: Log file data info for verification
+        std::cout << COLOR_BLUE << "[Backend] Parsed file: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
+        if (!originalHash.empty()) {
+            std::cout << COLOR_BLUE << "[Backend] Client hash: " << originalHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
+        }
         // Determine file type for appropriate handling
         std::string fileExtension = "";
         size_t dotPos = filename.find_last_of('.');
