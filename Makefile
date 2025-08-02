@@ -1,5 +1,5 @@
-# HTTP-FTP Server Makefile
-# ========================
+# RapidComm File Upload Server Makefile
+# ======================================
 
 # Compiler and flags
 CXX := g++
@@ -20,12 +20,14 @@ SRCDIR := src/services
 SOURCES := $(SRCDIR)/main.cpp \
            	$(SRCDIR)/http/HttpHandler.cpp \
 	$(SRCDIR)/socket/Socket.cpp \
-	$(SRCDIR)/ftp/FtpHandler.cpp \
+	$(SRCDIR)/storage/StorageService.cpp \
+	$(SRCDIR)/config/ConfigManager.cpp \
 	$(SRCDIR)/server/ServerManager.cpp
 
 HEADERS := $(SRCDIR)/http/HttpHandler.hpp \
 	$(SRCDIR)/socket/Socket.hpp \
-	$(SRCDIR)/ftp/FtpHandler.hpp \
+	$(SRCDIR)/storage/StorageService.hpp \
+	$(SRCDIR)/config/ConfigManager.hpp \
 	$(SRCDIR)/server/ServerManager.hpp
 
 # Object files
@@ -34,10 +36,10 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 # Binary
 BINDIR := build/bin
-BINARY := $(BINDIR)/http-ftp-server
+BINARY := $(BINDIR)/rapidcomm-server
 
 # Directories that need to be created
-DIRS := $(OBJDIR) $(OBJDIR)/http $(OBJDIR)/socket $(OBJDIR)/ftp $(OBJDIR)/server $(BINDIR) uploads
+DIRS := $(OBJDIR) $(OBJDIR)/http $(OBJDIR)/socket $(OBJDIR)/storage $(OBJDIR)/config $(OBJDIR)/server $(BINDIR) uploads
 
 # Default target
 .PHONY: all
