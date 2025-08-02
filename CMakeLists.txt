@@ -60,16 +60,18 @@ endif()
 # Define source files
 set(SOURCES
     src/services/main.cpp
-    src/services/http/HttpService.cpp
-    src/services/socket/Socket.cpp
-    src/services/ftp/FtpService.cpp
+    src/services/http/HttpHandler.cpp
+	src/services/socket/Socket.cpp
+	src/services/ftp/FtpHandler.cpp
+	src/services/server/ServerManager.cpp
 )
 
 # Define header files (for IDE support)
 set(HEADERS
-    src/services/http/HttpService.hpp
-    src/services/socket/Socket.hpp
-    src/services/ftp/FtpService.hpp
+    src/services/http/HttpHandler.hpp
+	src/services/socket/Socket.hpp
+	src/services/ftp/FtpHandler.hpp
+	src/services/server/ServerManager.hpp
 )
 
 # ================================ Executable Target ====================================

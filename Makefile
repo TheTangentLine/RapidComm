@@ -18,13 +18,15 @@ endif
 # Source and header files
 SRCDIR := src/services
 SOURCES := $(SRCDIR)/main.cpp \
-           $(SRCDIR)/http/HttpService.cpp \
-           $(SRCDIR)/socket/Socket.cpp \
-           $(SRCDIR)/ftp/FtpService.cpp
+           	$(SRCDIR)/http/HttpHandler.cpp \
+	$(SRCDIR)/socket/Socket.cpp \
+	$(SRCDIR)/ftp/FtpHandler.cpp \
+	$(SRCDIR)/server/ServerManager.cpp
 
-HEADERS := $(SRCDIR)/http/HttpService.hpp \
-           $(SRCDIR)/socket/Socket.hpp \
-           $(SRCDIR)/ftp/FtpService.hpp
+HEADERS := $(SRCDIR)/http/HttpHandler.hpp \
+	$(SRCDIR)/socket/Socket.hpp \
+	$(SRCDIR)/ftp/FtpHandler.hpp \
+	$(SRCDIR)/server/ServerManager.hpp
 
 # Object files
 OBJDIR := build/obj
@@ -35,7 +37,7 @@ BINDIR := build/bin
 BINARY := $(BINDIR)/http-ftp-server
 
 # Directories that need to be created
-DIRS := $(OBJDIR) $(OBJDIR)/http $(OBJDIR)/socket $(OBJDIR)/ftp $(BINDIR) uploads
+DIRS := $(OBJDIR) $(OBJDIR)/http $(OBJDIR)/socket $(OBJDIR)/ftp $(OBJDIR)/server $(BINDIR) uploads
 
 # Default target
 .PHONY: all
