@@ -80,7 +80,7 @@ clean-all: clean
 # Run the server
 .PHONY: run
 run: $(BINARY)
-	@cd $(BINDIR) && ./http-ftp-server
+	@cd $(BINDIR) && ./rapidcomm-server
 
 # Install binary to system (optional)
 .PHONY: install
@@ -93,7 +93,7 @@ install: $(BINARY)
 .PHONY: uninstall
 uninstall:
 	@echo "Removing from /usr/local/bin..."
-	@sudo rm -f /usr/local/bin/http-ftp-server
+	@sudo rm -f /usr/local/bin/rapidcomm-server
 	@echo "Uninstallation completed!"
 
 # Show help
