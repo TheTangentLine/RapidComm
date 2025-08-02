@@ -18,6 +18,13 @@ Socket::Socket(int port) : port(port)
         exit(1);
     }
 
+    // Enable socket reuse to avoid "Address already in use" errors
+    int opt = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Failed to set socket options!" << std::endl;
+        exit(1);
+    }
+
     // Setup server address information
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
