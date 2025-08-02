@@ -12,7 +12,7 @@
 
 // ----------------------------- Constructor/Destructor --------------------------------->
 
-ConfigManager::ConfigManager() : configFilePath("config.env")
+ConfigManager::ConfigManager() : configFilePath("../../config.env")
 {
     setDefaults();
     loadConfig();
