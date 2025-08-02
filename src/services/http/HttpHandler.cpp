@@ -107,7 +107,7 @@ std::string HttpHandler::parseRequest()
     size_t bodyAlreadyRead = request.size() - headersSize;
     size_t bodyStillNeeded = totalContentLength - bodyAlreadyRead;
     
-    std::cout << "[Backend] Headers size: " << headersSize << ", Body already read: " << bodyAlreadyRead << ", Still needed: " << bodyStillNeeded << std::endl;
+    // Clean HTTP processing without verbose output
     
     // Read remaining body if needed
     while (bodyStillNeeded > 0) {
@@ -122,11 +122,9 @@ std::string HttpHandler::parseRequest()
         
         request.append(buffer, bytesRead);
         bodyStillNeeded -= bytesRead;
-        
-        std::cout << "[Backend] Read " << bytesRead << " bytes, " << bodyStillNeeded << " remaining" << std::endl;
     }
     
-    std::cout << "[Backend] Total request size: " << request.size() << " bytes" << std::endl;
+    // Request processing completed
     return request;
 }
 

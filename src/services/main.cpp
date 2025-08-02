@@ -13,6 +13,7 @@ ServerManager* serverManager = nullptr;
 
 void signalHandler(int signal) {
     std::cout << "\n" << COLOR_YELLOW << "[Main] Received signal " << signal << ". Shutting down servers..." << COLOR_RESET << std::endl;
+    std::cout.flush();
     if (serverManager) {
         serverManager->stopAllServers();
     }

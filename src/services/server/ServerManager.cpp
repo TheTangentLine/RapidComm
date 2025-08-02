@@ -47,6 +47,7 @@ void ServerManager::startAllServers() {
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
+    std::cout.flush();
     
     try {
         std::thread frontendThread(&ServerManager::runFrontendServer, this);
@@ -90,6 +91,7 @@ void ServerManager::runFrontendServer() {
         frontendServer.listenSocket();
         
         std::cout << COLOR_GREEN << "[Frontend] Server started on port " << FRONTEND_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(frontendServer.getServerSocket(), nullptr, nullptr);
@@ -123,6 +125,7 @@ void ServerManager::runBackendServer() {
         backendServer.listenSocket();
         
         std::cout << COLOR_GREEN << "[Backend] Server started on port " << BACKEND_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(backendServer.getServerSocket(), nullptr, nullptr);
@@ -156,6 +159,7 @@ void ServerManager::runFtpServer() {
         ftpServer.listenSocket();
         
         std::cout << COLOR_GREEN << "[FTP] Server started on port " << FTP_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(ftpServer.getServerSocket(), nullptr, nullptr);
