@@ -213,25 +213,19 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
     
     auto contentTypeIt = headers.find("content-type");
     if (contentTypeIt == headers.end()) {
-        std::cout << "[Backend] Debug: Content-Type header not found" << std::endl;
         return "Missing Content-Type header";
     }
     
     std::string boundary = getBoundary(contentTypeIt->second);
     if (boundary.empty()) {
-        std::cout << "[Backend] Debug: Boundary extraction failed from: " << contentTypeIt->second << std::endl;
         return "Invalid multipart boundary";
     }
     
-    std::cout << "[Backend] Debug: Boundary found: " << boundary << std::endl;
-    
     // Get request body
     std::string body = getRequestBody(request);
-    std::cout << "[Backend] Debug: Body size: " << body.size() << " bytes" << std::endl;
     
     // Find file data in multipart body
     std::string boundaryDelim = "--" + boundary;
-    std::cout << "[Backend] Debug: Looking for boundary: " << boundaryDelim << std::endl;
     
     // Look for file form field (try different variations)
     size_t fileStart = std::string::npos;
@@ -245,14 +239,11 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
     for (const auto& pattern : fieldPatterns) {
         fileStart = body.find(pattern);
         if (fileStart != std::string::npos) {
-            std::cout << "[Backend] Debug: Found file field with pattern: " << pattern << std::endl;
             break;
         }
     }
     
     if (fileStart == std::string::npos) {
-        std::cout << "[Backend] Debug: File field not found. Body preview (first 500 chars):" << std::endl;
-        std::cout << body.substr(0, 500) << std::endl;
         return "File field not found";
     }
     
@@ -267,20 +258,16 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
                 filename = body.substr(filenameStart, filenameEnd - filenameStart);
             }
         } else {
-            std::cout << "[Backend] Debug: Filename not found in multipart data" << std::endl;
             return "Filename not found";
         }
     } else {
         filenameStart += 10; // Length of "filename=\""
         size_t filenameEnd = body.find("\"", filenameStart);
         if (filenameEnd == std::string::npos) {
-            std::cout << "[Backend] Debug: Invalid filename format" << std::endl;
             return "Invalid filename format";
         }
         filename = body.substr(filenameStart, filenameEnd - filenameStart);
     }
-    
-    std::cout << "[Backend] Debug: Extracted filename: " << filename << std::endl;
     
     // Find file content start (after headers)
     size_t dataStart = body.find("\r\n\r\n", fileStart);
@@ -290,14 +277,11 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
         if (dataStart != std::string::npos) {
             dataStart += 2;
         } else {
-            std::cout << "[Backend] Debug: File data start not found" << std::endl;
             return "File data not found";
         }
     } else {
         dataStart += 4; // Skip \r\n\r\n
     }
-    
-    std::cout << "[Backend] Debug: File data starts at position: " << dataStart << std::endl;
     
     // Find file content end (next boundary) - try multiple patterns
     size_t dataEnd = std::string::npos;
@@ -310,27 +294,20 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
     for (const auto& pattern : endPatterns) {
         dataEnd = body.find(pattern, dataStart);
         if (dataEnd != std::string::npos) {
-            std::cout << "[Backend] Debug: Found data end with pattern: " << pattern << std::endl;
             break;
         }
     }
     
     if (dataEnd == std::string::npos) {
-        std::cout << "[Backend] Debug: File data end not found. Body end preview (last 200 chars):" << std::endl;
-        size_t previewStart = body.size() > 200 ? body.size() - 200 : 0;
-        std::cout << body.substr(previewStart) << std::endl;
         return "File data end not found";
     }
     
     // Extract file data
     size_t fileSize = dataEnd - dataStart;
-    std::cout << "[Backend] Debug: File size: " << fileSize << " bytes" << std::endl;
     
     if (fileSize > 0) {
         fileData.assign(body.begin() + dataStart, body.begin() + dataEnd);
-        std::cout << "[Backend] Debug: Successfully extracted file data" << std::endl;
     } else {
-        std::cout << "[Backend] Debug: File size is 0 or negative" << std::endl;
         return "Invalid file size";
     }
     
