@@ -26,7 +26,6 @@
 FtpHandler::FtpHandler(int clientSocket) 
     : clientSocket(clientSocket), isServerMode(true), storageDirectory("../../uploads/")
 {
-    std::cout << "[FTP] Server mode initialized" << std::endl;
     createStorageDirectory();
 }
 
@@ -34,7 +33,6 @@ FtpHandler::FtpHandler(int clientSocket)
 FtpHandler::FtpHandler() 
     : clientSocket(-1), isServerMode(false), storageDirectory("../../uploads/")
 {
-    std::cout << "[FTP] Client mode initialized" << std::endl;
 }
 
 // ----------------------------- Destructor ----------------------------------->

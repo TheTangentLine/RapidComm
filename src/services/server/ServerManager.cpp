@@ -105,7 +105,6 @@ void ServerManager::runFrontendServer() {
             
             if (!serverRunning) break; // Check again after accept
             
-            std::cout << "[Frontend] Client connected" << std::endl;
             HttpHandler httpHandler(clientSocket, true);
             httpHandler.handleRequest();
         }
@@ -139,7 +138,6 @@ void ServerManager::runBackendServer() {
             
             if (!serverRunning) break; // Check again after accept
             
-            std::cout << "[Backend] Client connected" << std::endl;
             HttpHandler httpHandler(clientSocket, false);
             httpHandler.handleRequest();
         }
@@ -173,7 +171,6 @@ void ServerManager::runFtpServer() {
             
             if (!serverRunning) break; // Check again after accept
             
-            std::cout << "[FTP] Client connected" << std::endl;
             FtpHandler ftpHandler(clientSocket);
             ftpHandler.handleConnection();
         }
