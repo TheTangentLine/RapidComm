@@ -226,15 +226,7 @@ bool FtpHandler::uploadFileToServer(const std::string& filename, const std::vect
 
 void FtpHandler::processFile(const std::string& filename, const std::vector<char>& fileData)
 {
-    std::cout << "\n========== FTP FILE PROCESSING ==========" << std::endl;
-    std::cout << "[FTP] Processing file: " << filename << std::endl;
-    std::cout << "[FTP] File size: " << getFileSizeString(fileData.size()) << std::endl;
-    std::cout << "[FTP] File type: " << getFileType(filename) << std::endl;
-    
-    // Display file content
-    displayFileContent(filename, fileData);
-    
-    std::cout << "=========================================" << std::endl;
+    std::cout << "[FTP] Processing file: " << filename << " (" << getFileSizeString(fileData.size()) << ", " << getFileType(filename) << ")" << std::endl;
 }
 
 void FtpHandler::displayFileContent(const std::string& filename, const std::vector<char>& fileData)
