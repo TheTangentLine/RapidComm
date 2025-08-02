@@ -11,6 +11,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+// Colors for terminal output
+#define COLOR_RED     "\033[0;31m"
+#define COLOR_GREEN   "\033[0;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_BLUE    "\033[0;34m"
+#define COLOR_CYAN    "\033[0;36m"
+#define COLOR_RESET   "\033[0m"
+
 // ----------------------------- Constructor --------------------------------->
 
 HttpHandler::HttpHandler(int clientSocket, bool isFrontend) 
@@ -21,12 +29,12 @@ HttpHandler::HttpHandler(int clientSocket, bool isFrontend)
 void HttpHandler::handleRequest()
 {
     std::string request = parseRequest();
-    std::cout << "[" << (isFrontend ? "Frontend" : "Backend") << "] Request received" << std::endl;
+    std::cout << COLOR_CYAN << "[" << (isFrontend ? "Frontend" : "Backend") << "] Request received" << COLOR_RESET << std::endl;
 
     std::string method = extractMethod(request);
     std::string route = extractRoute(request);
     
-    std::cout << "[" << (isFrontend ? "Frontend" : "Backend") << "] " << method << " " << route << std::endl;
+    std::cout << COLOR_BLUE << "[" << (isFrontend ? "Frontend" : "Backend") << "] " << method << " " << route << COLOR_RESET << std::endl;
     
     // Handle OPTIONS requests for CORS
     if (method == "OPTIONS") {
@@ -67,7 +75,7 @@ std::string HttpHandler::parseRequest()
         int bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
         
         if (bytesRead <= 0) {
-            std::cerr << "[Backend] Error reading request headers!" << std::endl;
+            std::cerr << COLOR_RED << "[Backend] Error reading request headers!" << COLOR_RESET << std::endl;
             return "";
         }
         
@@ -76,7 +84,7 @@ std::string HttpHandler::parseRequest()
         
         // Prevent infinite loop with very large headers
         if (request.size() > 1024 * 1024) { // 1MB header limit
-            std::cerr << "[Backend] Headers too large!" << std::endl;
+            std::cerr << COLOR_RED << "[Backend] Headers too large!" << COLOR_RESET << std::endl;
             return "";
         }
     }
@@ -98,7 +106,7 @@ std::string HttpHandler::parseRequest()
             lengthStr.erase(lengthStr.find_last_not_of(" \t") + 1);
             totalContentLength = std::stoull(lengthStr);
             
-            std::cout << "[Backend] Content-Length: " << totalContentLength << " bytes" << std::endl;
+            std::cout << COLOR_YELLOW << "[Backend] Content-Length: " << totalContentLength << " bytes" << COLOR_RESET << std::endl;
         }
     }
     
@@ -116,7 +124,7 @@ std::string HttpHandler::parseRequest()
         
         int bytesRead = read(clientSocket, buffer, chunkSize);
         if (bytesRead <= 0) {
-            std::cerr << "[Backend] Error reading request body!" << std::endl;
+            std::cerr << COLOR_RED << "[Backend] Error reading request body!" << COLOR_RESET << std::endl;
             break;
         }
         
@@ -185,7 +193,7 @@ std::string HttpHandler::getHtmlContent(const std::string &route)
 
 void HttpHandler::handleFileUpload(const std::string &request)
 {
-    std::cout << "[Backend] Processing file upload..." << std::endl;
+    std::cout << COLOR_CYAN << "[Backend] Processing file upload..." << COLOR_RESET << std::endl;
     
     std::string filename;
     std::vector<char> fileData;
@@ -193,7 +201,7 @@ void HttpHandler::handleFileUpload(const std::string &request)
     std::string result = parseMultipartData(request, filename, fileData);
     
     if (result == "success") {
-        std::cout << "[Backend] File upload successful: " << filename << " (" << fileData.size() << " bytes)" << std::endl;
+        std::cout << COLOR_GREEN << "[Backend] File upload successful: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
         
         // Send file to FTP server using optimized upload
         FtpHandler ftpClient; // Client mode constructor
@@ -201,7 +209,7 @@ void HttpHandler::handleFileUpload(const std::string &request)
         
         sendJsonResponse("{\"status\":\"success\",\"message\":\"File uploaded successfully\",\"filename\":\"" + filename + "\"}");
     } else {
-        std::cout << "[Backend] File upload failed: " << result << std::endl;
+        std::cout << COLOR_RED << "[Backend] File upload failed: " << result << COLOR_RESET << std::endl;
         sendErrorResponse(400, result);
     }
 }
