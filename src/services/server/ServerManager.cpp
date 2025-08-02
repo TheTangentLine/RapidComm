@@ -9,6 +9,14 @@
 #include <errno.h>
 #include <cstring>
 
+// Colors for terminal output
+#define COLOR_RED     "\033[0;31m"
+#define COLOR_GREEN   "\033[0;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_BLUE    "\033[0;34m"
+#define COLOR_CYAN    "\033[0;36m"
+#define COLOR_RESET   "\033[0m"
+
 #define FRONTEND_PORT 3000
 #define BACKEND_PORT 8080
 #define FTP_PORT 2121
@@ -30,15 +38,16 @@ bool ServerManager::isServerRunning() {
 }
 
 void ServerManager::startAllServers() {
-    std::cout << "========================================" << std::endl;
-    std::cout << "  HTTP-FTP File Upload Server" << std::endl;
-    std::cout << "========================================" << std::endl;
-    std::cout << "Frontend: http://localhost:" << FRONTEND_PORT << std::endl;
-    std::cout << "Backend:  http://localhost:" << BACKEND_PORT << std::endl;
-    std::cout << "FTP:      localhost:" << FTP_PORT << std::endl;
-    std::cout << "========================================" << std::endl;
-    std::cout << "Press Ctrl+C to stop all servers" << std::endl;
-    std::cout << "========================================" << std::endl;
+    std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "  HTTP-FTP File Upload Server" << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
+    std::cout << COLOR_GREEN << "Frontend: http://localhost:" << FRONTEND_PORT << COLOR_RESET << std::endl;
+    std::cout << COLOR_GREEN << "Backend:  http://localhost:" << BACKEND_PORT << COLOR_RESET << std::endl;
+    std::cout << COLOR_GREEN << "FTP:      localhost:" << FTP_PORT << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
+    std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
+    std::cout.flush();
     
     try {
         std::thread frontendThread(&ServerManager::runFrontendServer, this);
@@ -54,11 +63,11 @@ void ServerManager::startAllServers() {
         throw;
     }
     
-    std::cout << "[Main] All servers stopped successfully" << std::endl;
+    std::cout << COLOR_GREEN << "[Main] All servers stopped successfully" << COLOR_RESET << std::endl;
 }
 
 void ServerManager::stopAllServers() {
-    std::cout << "[ServerManager] Stopping all servers..." << std::endl;
+    std::cout << COLOR_YELLOW << "[ServerManager] Stopping all servers..." << COLOR_RESET << std::endl;
     serverRunning = false;
     
     // Close all server sockets to interrupt accept() calls
@@ -72,7 +81,7 @@ void ServerManager::stopAllServers() {
         close(ftpSocket->getServerSocket());
     }
     
-    std::cout << "[ServerManager] Server sockets closed" << std::endl;
+    std::cout << COLOR_CYAN << "[ServerManager] Server sockets closed" << COLOR_RESET << std::endl;
 }
 
 void ServerManager::runFrontendServer() {
@@ -81,7 +90,8 @@ void ServerManager::runFrontendServer() {
         frontendSocket = &frontendServer;
         frontendServer.listenSocket();
         
-        std::cout << "[Frontend] Server started on port " << FRONTEND_PORT << std::endl;
+        std::cout << COLOR_GREEN << "[Frontend] Server started on port " << FRONTEND_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(frontendServer.getServerSocket(), nullptr, nullptr);
@@ -101,7 +111,7 @@ void ServerManager::runFrontendServer() {
         }
         
         frontendSocket = nullptr;
-        std::cout << "[Frontend] Server stopped" << std::endl;
+        std::cout << COLOR_CYAN << "[Frontend] Server stopped" << COLOR_RESET << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Frontend] Server error: " << e.what() << std::endl;
         frontendSocket = nullptr;
@@ -114,7 +124,8 @@ void ServerManager::runBackendServer() {
         backendSocket = &backendServer;
         backendServer.listenSocket();
         
-        std::cout << "[Backend] Server started on port " << BACKEND_PORT << std::endl;
+        std::cout << COLOR_GREEN << "[Backend] Server started on port " << BACKEND_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(backendServer.getServerSocket(), nullptr, nullptr);
@@ -134,7 +145,7 @@ void ServerManager::runBackendServer() {
         }
         
         backendSocket = nullptr;
-        std::cout << "[Backend] Server stopped" << std::endl;
+        std::cout << COLOR_CYAN << "[Backend] Server stopped" << COLOR_RESET << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Backend] Server error: " << e.what() << std::endl;
         backendSocket = nullptr;
@@ -147,7 +158,8 @@ void ServerManager::runFtpServer() {
         ftpSocket = &ftpServer;
         ftpServer.listenSocket();
         
-        std::cout << "[FTP] Server started on port " << FTP_PORT << std::endl;
+        std::cout << COLOR_GREEN << "[FTP] Server started on port " << FTP_PORT << COLOR_RESET << std::endl;
+        std::cout.flush();
         
         while (serverRunning) {
             int clientSocket = accept(ftpServer.getServerSocket(), nullptr, nullptr);
@@ -167,7 +179,7 @@ void ServerManager::runFtpServer() {
         }
         
         ftpSocket = nullptr;
-        std::cout << "[FTP] Server stopped" << std::endl;
+        std::cout << COLOR_CYAN << "[FTP] Server stopped" << COLOR_RESET << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[FTP] Server error: " << e.what() << std::endl;
         ftpSocket = nullptr;
