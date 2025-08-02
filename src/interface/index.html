@@ -641,35 +641,35 @@
       async function calculateFileHash(file) {
         const arrayBuffer = await file.arrayBuffer();
         const dataArray = new Uint8Array(arrayBuffer);
-        
+
         // Simple hash algorithm that matches server implementation
         let hash1 = 0;
         let hash2 = 0;
         let hash3 = 0;
-        
+
         // Hash pass 1: Basic hash
         for (let i = 0; i < dataArray.length; i++) {
           hash1 = ((hash1 << 5) - hash1 + dataArray[i]) & 0xffffffff;
         }
-        
-        // Hash pass 2: With salt1
+
+        // Hash pass 2: With salt1 - process salt1 chars first, then data
         const salt1 = "salt1";
-        for (let i = 0; i < salt1.length; i++) {
-          hash2 = ((hash2 << 5) - hash2 + salt1.charCodeAt(i)) & 0xffffffff;
-        }
         for (let i = 0; i < dataArray.length; i++) {
           hash2 = ((hash2 << 5) - hash2 + dataArray[i]) & 0xffffffff;
         }
-        
-        // Hash pass 3: With salt2 and size
-        const salt2 = "salt2" + dataArray.length.toString();
-        for (let i = 0; i < salt2.length; i++) {
-          hash3 = ((hash3 << 5) - hash3 + salt2.charCodeAt(i)) & 0xffffffff;
+        for (let i = 0; i < salt1.length; i++) {
+          hash2 = ((hash2 << 5) - hash2 + salt1.charCodeAt(i)) & 0xffffffff;
         }
+
+        // Hash pass 3: With salt2 and size - process data first, then salt2
+        const salt2 = "salt2" + dataArray.length.toString();
         for (let i = 0; i < dataArray.length; i++) {
           hash3 = ((hash3 << 5) - hash3 + dataArray[i]) & 0xffffffff;
         }
-        
+        for (let i = 0; i < salt2.length; i++) {
+          hash3 = ((hash3 << 5) - hash3 + salt2.charCodeAt(i)) & 0xffffffff;
+        }
+
         // Calculate checksum (similar to server)
         let checksum = 0;
         for (let i = 0; i < dataArray.length; i++) {
@@ -677,10 +677,14 @@
           checksum = (checksum << 1) | (checksum >>> 31); // Rotate left by 1
         }
         checksum = checksum >>> 0; // Ensure unsigned 32-bit
-        
+
         // Combine hashes and format as hex (similar to server)
-        let result = hash1.toString(16) + hash2.toString(16) + hash3.toString(16) + checksum.toString(16);
-        
+        let result =
+          hash1.toString(16) +
+          hash2.toString(16) +
+          hash3.toString(16) +
+          checksum.toString(16);
+
         // Pad to 64 characters
         while (result.length < 64) {
           result += "0";
@@ -688,7 +692,7 @@
         if (result.length > 64) {
           result = result.substring(0, 64);
         }
-        
+
         return result;
       }
 

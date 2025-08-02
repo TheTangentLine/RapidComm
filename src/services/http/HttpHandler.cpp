@@ -242,6 +242,12 @@ void HttpHandler::handleFileUpload(const std::string &request)
             
             // Perform server-side integrity verification if original hash was provided
             if (!originalHash.empty() && !serverHash.empty()) {
+                // Debug: Print full hash details
+                std::cout << COLOR_BLUE << "[Backend] Hash comparison debug:" << COLOR_RESET << std::endl;
+                std::cout << COLOR_BLUE << "[Backend] Original length: " << originalHash.length() << ", Server length: " << serverHash.length() << COLOR_RESET << std::endl;
+                std::cout << COLOR_BLUE << "[Backend] Original full: '" << originalHash << "'" << COLOR_RESET << std::endl;
+                std::cout << COLOR_BLUE << "[Backend] Server full:   '" << serverHash << "'" << COLOR_RESET << std::endl;
+                
                 if (originalHash == serverHash) {
                     std::cout << COLOR_GREEN << "[Backend] File integrity verified ✅" << COLOR_RESET << std::endl;
                     message += " (integrity verified)";

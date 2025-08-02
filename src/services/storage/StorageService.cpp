@@ -394,22 +394,22 @@ std::string StorageService::calculateSHA256Hash(const std::vector<char>& data) c
         hash1 = ((hash1 << 5) - hash1 + static_cast<unsigned char>(data[i])) & 0xffffffff;
     }
     
-    // Hash pass 2: With salt1
+    // Hash pass 2: With salt1 - process data first, then salt1
     std::string salt1 = "salt1";
-    for (char c : salt1) {
-        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(c)) & 0xffffffff;
-    }
     for (size_t i = 0; i < data.size(); i++) {
         hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(data[i])) & 0xffffffff;
     }
-    
-    // Hash pass 3: With salt2 and size
-    std::string salt2 = "salt2" + std::to_string(data.size());
-    for (char c : salt2) {
-        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(c)) & 0xffffffff;
+    for (char c : salt1) {
+        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(c)) & 0xffffffff;
     }
+    
+    // Hash pass 3: With salt2 and size - process data first, then salt2
+    std::string salt2 = "salt2" + std::to_string(data.size());
     for (size_t i = 0; i < data.size(); i++) {
         hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    for (char c : salt2) {
+        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(c)) & 0xffffffff;
     }
     
     // Calculate checksum (same as existing method)
