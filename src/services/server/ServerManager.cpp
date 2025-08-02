@@ -4,6 +4,10 @@
 #include "../ftp/FtpHandler.hpp"
 #include <iostream>
 #include <thread>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <errno.h>
+#include <cstring>
 
 #define FRONTEND_PORT 3000
 #define BACKEND_PORT 8080
@@ -11,9 +15,11 @@
 
 std::atomic<bool> ServerManager::serverRunning(true);
 
-ServerManager::ServerManager() {}
+ServerManager::ServerManager() : frontendSocket(nullptr), backendSocket(nullptr), ftpSocket(nullptr) {}
 
-ServerManager::~ServerManager() {}
+ServerManager::~ServerManager() {
+    stopAllServers();
+}
 
 void ServerManager::setServerRunning(bool running) {
     serverRunning = running;
@@ -52,12 +58,27 @@ void ServerManager::startAllServers() {
 }
 
 void ServerManager::stopAllServers() {
+    std::cout << "[ServerManager] Stopping all servers..." << std::endl;
     serverRunning = false;
+    
+    // Close all server sockets to interrupt accept() calls
+    if (frontendSocket) {
+        close(frontendSocket->getServerSocket());
+    }
+    if (backendSocket) {
+        close(backendSocket->getServerSocket());
+    }
+    if (ftpSocket) {
+        close(ftpSocket->getServerSocket());
+    }
+    
+    std::cout << "[ServerManager] Server sockets closed" << std::endl;
 }
 
 void ServerManager::runFrontendServer() {
     try {
         Socket frontendServer(FRONTEND_PORT);
+        frontendSocket = &frontendServer;
         frontendServer.listenSocket();
         
         std::cout << "[Frontend] Server started on port " << FRONTEND_PORT << std::endl;
@@ -67,23 +88,30 @@ void ServerManager::runFrontendServer() {
             
             if (clientSocket == -1) {
                 if (serverRunning) {
-                    std::cerr << "[Frontend] Failed to accept client connection!" << std::endl;
+                    std::cerr << "[Frontend] Accept failed: " << strerror(errno) << std::endl;
                 }
-                continue;
+                break; // Exit loop on error
             }
+            
+            if (!serverRunning) break; // Check again after accept
             
             std::cout << "[Frontend] Client connected" << std::endl;
             HttpHandler httpHandler(clientSocket, true);
             httpHandler.handleRequest();
         }
+        
+        frontendSocket = nullptr;
+        std::cout << "[Frontend] Server stopped" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Frontend] Server error: " << e.what() << std::endl;
+        frontendSocket = nullptr;
     }
 }
 
 void ServerManager::runBackendServer() {
     try {
         Socket backendServer(BACKEND_PORT);
+        backendSocket = &backendServer;
         backendServer.listenSocket();
         
         std::cout << "[Backend] Server started on port " << BACKEND_PORT << std::endl;
@@ -93,23 +121,30 @@ void ServerManager::runBackendServer() {
             
             if (clientSocket == -1) {
                 if (serverRunning) {
-                    std::cerr << "[Backend] Failed to accept client connection!" << std::endl;
+                    std::cerr << "[Backend] Accept failed: " << strerror(errno) << std::endl;
                 }
-                continue;
+                break; // Exit loop on error
             }
+            
+            if (!serverRunning) break; // Check again after accept
             
             std::cout << "[Backend] Client connected" << std::endl;
             HttpHandler httpHandler(clientSocket, false);
             httpHandler.handleRequest();
         }
+        
+        backendSocket = nullptr;
+        std::cout << "[Backend] Server stopped" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Backend] Server error: " << e.what() << std::endl;
+        backendSocket = nullptr;
     }
 }
 
 void ServerManager::runFtpServer() {
     try {
         Socket ftpServer(FTP_PORT);
+        ftpSocket = &ftpServer;
         ftpServer.listenSocket();
         
         std::cout << "[FTP] Server started on port " << FTP_PORT << std::endl;
@@ -119,16 +154,22 @@ void ServerManager::runFtpServer() {
             
             if (clientSocket == -1) {
                 if (serverRunning) {
-                    std::cerr << "[FTP] Failed to accept client connection!" << std::endl;
+                    std::cerr << "[FTP] Accept failed: " << strerror(errno) << std::endl;
                 }
-                continue;
+                break; // Exit loop on error
             }
+            
+            if (!serverRunning) break; // Check again after accept
             
             std::cout << "[FTP] Client connected" << std::endl;
             FtpHandler ftpHandler(clientSocket);
             ftpHandler.handleConnection();
         }
+        
+        ftpSocket = nullptr;
+        std::cout << "[FTP] Server stopped" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[FTP] Server error: " << e.what() << std::endl;
+        ftpSocket = nullptr;
     }
 }

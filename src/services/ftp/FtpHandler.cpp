@@ -454,21 +454,27 @@ bool FtpHandler::createStorageDirectory()
 
 std::string FtpHandler::getSafeFilename(const std::string& filename)
 {
-    std::string safeFilename = filename;
-    
-    // Remove path separators and dangerous characters
-    std::replace(safeFilename.begin(), safeFilename.end(), '/', '_');
-    std::replace(safeFilename.begin(), safeFilename.end(), '\\', '_');
-    std::replace(safeFilename.begin(), safeFilename.end(), '.', '_');
-    
-    // Add extension back if it was there originally
+    // Find the extension first
     size_t lastDot = filename.find_last_of('.');
+    std::string baseName = filename;
+    std::string extension = "";
+    
     if (lastDot != std::string::npos) {
-        std::string extension = filename.substr(lastDot);
-        safeFilename += extension;
+        baseName = filename.substr(0, lastDot);
+        extension = filename.substr(lastDot);
     }
     
-    return safeFilename;
+    // Clean only the base name, preserve the extension
+    std::replace(baseName.begin(), baseName.end(), '/', '_');
+    std::replace(baseName.begin(), baseName.end(), '\\', '_');
+    std::replace(baseName.begin(), baseName.end(), ':', '_');
+    std::replace(baseName.begin(), baseName.end(), '<', '_');
+    std::replace(baseName.begin(), baseName.end(), '>', '_');
+    std::replace(baseName.begin(), baseName.end(), '|', '_');
+    std::replace(baseName.begin(), baseName.end(), '*', '_');
+    std::replace(baseName.begin(), baseName.end(), '?', '_');
+    
+    return baseName + extension;
 }
 
 // ----------------------------- Quality Optimization Functions ---------------->

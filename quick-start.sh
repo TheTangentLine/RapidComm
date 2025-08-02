@@ -5,11 +5,22 @@
 
 set -e
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Colors for output (check if terminal supports colors)
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1 && [[ $(tput colors) -ge 8 ]]; then
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    RED='\033[0;31m'
+    BOLD='\033[1m'
+    NC='\033[0m' # No Color
+else
+    GREEN=''
+    BLUE=''
+    YELLOW=''
+    RED=''
+    BOLD=''
+    NC=''
+fi
 
 print_header() {
     echo -e "${BLUE}"

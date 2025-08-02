@@ -3,6 +3,8 @@
 
 #include <atomic>
 
+class Socket; // Forward declaration
+
 class ServerManager
 {
 public:
@@ -17,6 +19,11 @@ public:
 
 private:
     static std::atomic<bool> serverRunning;
+    
+    // Store socket pointers to close them during shutdown
+    Socket* frontendSocket;
+    Socket* backendSocket;
+    Socket* ftpSocket;
     
     void runFrontendServer();
     void runBackendServer();
