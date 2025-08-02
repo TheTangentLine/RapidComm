@@ -218,6 +218,7 @@ docs/latex/
 .env
 .env.local
 .env.*.local
+config.env
 
 # SSL certificates (if any)
 *.pem
