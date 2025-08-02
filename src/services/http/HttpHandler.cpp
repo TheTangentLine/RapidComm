@@ -29,12 +29,12 @@ HttpHandler::HttpHandler(int clientSocket, bool isFrontend)
 void HttpHandler::handleRequest()
 {
     std::string request = parseRequest();
-    std::cout << COLOR_CYAN << "[" << (isFrontend ? "Frontend" : "Backend") << "] Request received" << COLOR_RESET << std::endl;
 
     std::string method = extractMethod(request);
     std::string route = extractRoute(request);
     
-    std::cout << COLOR_BLUE << "[" << (isFrontend ? "Frontend" : "Backend") << "] " << method << " " << route << COLOR_RESET << std::endl;
+    std::string serverColor = isFrontend ? COLOR_BLUE : COLOR_YELLOW;
+    std::cout << serverColor << "[" << (isFrontend ? "Frontend" : "Backend") << "] " << method << " " << route << COLOR_RESET << std::endl;
     
     // Handle OPTIONS requests for CORS
     if (method == "OPTIONS") {
@@ -193,7 +193,7 @@ std::string HttpHandler::getHtmlContent(const std::string &route)
 
 void HttpHandler::handleFileUpload(const std::string &request)
 {
-    std::cout << COLOR_CYAN << "[Backend] Processing file upload..." << COLOR_RESET << std::endl;
+    std::cout << COLOR_YELLOW << "[Backend] Processing file upload..." << COLOR_RESET << std::endl;
     
     std::string filename;
     std::vector<char> fileData;
