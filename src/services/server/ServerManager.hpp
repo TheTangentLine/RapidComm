@@ -23,11 +23,9 @@ private:
     // Store socket pointers to close them during shutdown
     Socket* frontendSocket;
     Socket* backendSocket;
-    Socket* ftpSocket;
     
     void runFrontendServer();
     void runBackendServer();
-    void runFtpServer();
 };
 
 #endif
