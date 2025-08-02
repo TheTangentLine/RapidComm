@@ -78,17 +78,6 @@ clean-all: clean
 # Run the server
 .PHONY: run
 run: $(BINARY)
-	@echo "========================================="
-	@echo "  Starting HTTP-FTP Server"
-	@echo "========================================="
-	@echo "Frontend: http://localhost:3000"
-	@echo "Backend:  http://localhost:8080"
-	@echo "FTP:      localhost:2121"
-	@echo "========================================="
-	@echo "Working directory: $(BINDIR)"
-	@echo "HTML files: ../../src/interface/"
-	@echo "Press Ctrl+C to stop the server"
-	@echo ""
 	@cd $(BINDIR) && ./http-ftp-server
 
 # Install binary to system (optional)
