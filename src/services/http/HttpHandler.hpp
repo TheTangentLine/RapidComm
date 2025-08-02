@@ -5,11 +5,11 @@
 #include <vector>
 #include <map>
 
-class HttpService
+class HttpHandler
 {
 public:
-    HttpService(int clientSocket, bool isFrontend = true);
-    ~HttpService();
+    HttpHandler(int clientSocket, bool isFrontend = true);
+    ~HttpHandler();
 
     void handleRequest();
 

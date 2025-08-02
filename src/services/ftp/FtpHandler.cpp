@@ -1,4 +1,4 @@
-#include "FtpService.hpp"
+#include "FtpHandler.hpp"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -11,19 +11,20 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <cstring>
+#include <chrono>
+#include <functional>
 
-// ----------------------------- Constructors -------------------------------->
+// ----------------------------- Constructor --------------------------------->
 
-// Server mode constructor (accepts connections)
-FtpService::FtpService(int clientSocket) 
+FtpHandler::FtpHandler(int clientSocket) 
     : clientSocket(clientSocket), isServerMode(true), storageDirectory("uploads/")
 {
     std::cout << "[FTP] Server mode initialized" << std::endl;
     createStorageDirectory();
 }
 
-// Client mode constructor (connects to server)
-FtpService::FtpService() 
+
+FtpHandler::FtpHandler() 
     : clientSocket(-1), isServerMode(false), storageDirectory("uploads/")
 {
     std::cout << "[FTP] Client mode initialized" << std::endl;
@@ -31,7 +32,7 @@ FtpService::FtpService()
 
 // ----------------------------- Destructor ----------------------------------->
 
-FtpService::~FtpService() 
+FtpHandler::~FtpHandler() 
 {
     if (clientSocket != -1) {
         close(clientSocket);
@@ -39,9 +40,9 @@ FtpService::~FtpService()
     std::cout << "[FTP] Service destroyed" << std::endl;
 }
 
-// ----------------------------- Server Methods ------------------------------>
+// ----------------------------- Connection Handling -------------------------->
 
-void FtpService::handleConnection()
+void FtpHandler::handleConnection()
 {
     std::cout << "[FTP] Handling incoming connection..." << std::endl;
     std::cout << "[FTP] Server mode: " << (isServerMode ? "enabled" : "disabled") << std::endl;
@@ -117,9 +118,33 @@ void FtpService::handleConnection()
     }
 }
 
-// ----------------------------- Client Methods ------------------------------>
+// ----------------------------- Upload Handling ------------------------------>
 
-bool FtpService::uploadFileToServer(const std::string& filename, const std::vector<char>& fileData)
+void FtpHandler::handleFileUpload(const std::string& filename, const std::vector<char>& fileData)
+{
+    std::cout << "[FTP] Handling optimized file upload: " << filename << " (" << fileData.size() << " bytes)" << std::endl;
+    
+    // Calculate file integrity hash before processing
+    std::string fileHash = calculateFileHash(fileData);
+    std::cout << "[FTP] File integrity hash: " << fileHash << std::endl;
+    
+    // Use optimized upload method
+    bool uploaded = optimizedUpload(filename, fileData);
+    
+    if (uploaded) {
+        // Verify integrity after upload
+        std::cout << "[FTP] File upload completed successfully: " << filename << std::endl;
+        std::cout << "[FTP] Quality maintained - Hash verified" << std::endl;
+        sendResponse("UPLOAD_SUCCESS File uploaded with integrity verification");
+    } else {
+        std::cout << "[FTP] Optimized file upload failed: " << filename << std::endl;
+        sendResponse("UPLOAD_ERROR Failed to upload with quality assurance");
+    }
+}
+
+// ----------------------------- Client Upload Methods ----------------------->
+
+bool FtpHandler::uploadFileToServer(const std::string& filename, const std::vector<char>& fileData)
 {
     std::cout << "[FTP] Connecting to FTP server..." << std::endl;
     
@@ -199,7 +224,7 @@ bool FtpService::uploadFileToServer(const std::string& filename, const std::vect
 
 // ----------------------------- File Processing ------------------------------>
 
-void FtpService::processFile(const std::string& filename, const std::vector<char>& fileData)
+void FtpHandler::processFile(const std::string& filename, const std::vector<char>& fileData)
 {
     std::cout << "\n========== FTP FILE PROCESSING ==========" << std::endl;
     std::cout << "[FTP] Processing file: " << filename << std::endl;
@@ -212,7 +237,7 @@ void FtpService::processFile(const std::string& filename, const std::vector<char
     std::cout << "=========================================" << std::endl;
 }
 
-void FtpService::displayFileContent(const std::string& filename, const std::vector<char>& fileData)
+void FtpHandler::displayFileContent(const std::string& filename, const std::vector<char>& fileData)
 {
     std::string fileType = getFileType(filename);
     
@@ -239,7 +264,7 @@ void FtpService::displayFileContent(const std::string& filename, const std::vect
     std::cout << "-------------------------------------------" << std::endl;
 }
 
-bool FtpService::saveFile(const std::string& filename, const std::vector<char>& fileData)
+bool FtpHandler::saveFile(const std::string& filename, const std::vector<char>& fileData)
 {
     try {
         std::string safeFilename = getSafeFilename(filename);
@@ -265,7 +290,7 @@ bool FtpService::saveFile(const std::string& filename, const std::vector<char>& 
 
 // ----------------------------- Protocol Handling --------------------------->
 
-std::map<std::string, std::string> FtpService::parseMessage(const std::string& message)
+std::map<std::string, std::string> FtpHandler::parseMessage(const std::string& message)
 {
     std::map<std::string, std::string> result;
     std::istringstream iss(message);
@@ -297,13 +322,13 @@ std::map<std::string, std::string> FtpService::parseMessage(const std::string& m
     return result;
 }
 
-void FtpService::sendResponse(const std::string& message)
+void FtpHandler::sendResponse(const std::string& message)
 {
     std::string response = message + "\n";
     send(clientSocket, response.c_str(), response.length(), 0);
 }
 
-std::string FtpService::receiveData()
+std::string FtpHandler::receiveData()
 {
     char buffer[4096];
     memset(buffer, 0, sizeof(buffer));
@@ -318,7 +343,7 @@ std::string FtpService::receiveData()
 
 // ----------------------------- Helper Functions ----------------------------->
 
-std::string FtpService::getFileType(const std::string& filename)
+std::string FtpHandler::getFileType(const std::string& filename)
 {
     size_t dotPos = filename.find_last_of('.');
     if (dotPos == std::string::npos) {
@@ -361,7 +386,7 @@ std::string FtpService::getFileType(const std::string& filename)
     return "binary";
 }
 
-void FtpService::displayBinaryContent(const std::vector<char>& data, size_t maxBytes)
+void FtpHandler::displayBinaryContent(const std::vector<char>& data, size_t maxBytes)
 {
     size_t bytesToShow = std::min(data.size(), maxBytes);
     
@@ -397,7 +422,7 @@ void FtpService::displayBinaryContent(const std::vector<char>& data, size_t maxB
     std::cout << std::dec;
 }
 
-std::string FtpService::getFileSizeString(size_t bytes)
+std::string FtpHandler::getFileSizeString(size_t bytes)
 {
     const char* units[] = {"B", "KB", "MB", "GB"};
     int unitIndex = 0;
@@ -413,7 +438,7 @@ std::string FtpService::getFileSizeString(size_t bytes)
     return oss.str();
 }
 
-bool FtpService::createStorageDirectory()
+bool FtpHandler::createStorageDirectory()
 {
     try {
         if (!std::filesystem::exists(storageDirectory)) {
@@ -427,7 +452,7 @@ bool FtpService::createStorageDirectory()
     }
 }
 
-std::string FtpService::getSafeFilename(const std::string& filename)
+std::string FtpHandler::getSafeFilename(const std::string& filename)
 {
     std::string safeFilename = filename;
     
@@ -444,4 +469,208 @@ std::string FtpService::getSafeFilename(const std::string& filename)
     }
     
     return safeFilename;
+}
+
+// ----------------------------- Quality Optimization Functions ---------------->
+
+uint32_t FtpHandler::calculateChecksum(const std::vector<char>& data)
+{
+    uint32_t checksum = 0;
+    for (size_t i = 0; i < data.size(); ++i) {
+        checksum += static_cast<uint8_t>(data[i]);
+        checksum = (checksum << 1) | (checksum >> 31); // Rotate left by 1
+    }
+    return checksum;
+}
+
+std::string FtpHandler::calculateFileHash(const std::vector<char>& data)
+{
+    // Create a robust hash using std::hash with multiple passes
+    std::hash<std::string> hasher;
+    std::string dataStr(data.begin(), data.end());
+    
+    // Multi-pass hashing for better distribution
+    size_t hash1 = hasher(dataStr);
+    size_t hash2 = hasher(dataStr + std::to_string(data.size()));
+    uint32_t checksum = calculateChecksum(data);
+    
+    std::ostringstream oss;
+    oss << std::hex << hash1 << hash2 << checksum;
+    return oss.str();
+}
+
+bool FtpHandler::verifyIntegrity(const std::vector<char>& data, const std::string& expectedHash)
+{
+    std::string actualHash = calculateFileHash(data);
+    bool isValid = (actualHash == expectedHash);
+    
+    std::cout << "[FTP] Integrity check - Expected: " << expectedHash.substr(0, 16) << "..." << std::endl;
+    std::cout << "[FTP] Integrity check - Actual:   " << actualHash.substr(0, 16) << "..." << std::endl;
+    std::cout << "[FTP] Integrity status: " << (isValid ? "VALID" : "CORRUPTED") << std::endl;
+    
+    return isValid;
+}
+
+bool FtpHandler::transferChunk(int socket, const char* data, size_t size, size_t chunkSize)
+{
+    size_t totalSent = 0;
+    const int maxRetries = 3;
+    
+    while (totalSent < size) {
+        size_t remainingSize = size - totalSent;
+        size_t currentChunkSize = std::min(chunkSize, remainingSize);
+        
+        int retries = 0;
+        ssize_t sent = 0;
+        
+        while (retries < maxRetries) {
+            sent = send(socket, data + totalSent, currentChunkSize, 0);
+            
+            if (sent > 0) {
+                totalSent += sent;
+                break;
+            } else if (sent == -1) {
+                retries++;
+                std::cerr << "[FTP] Chunk transfer retry " << retries << "/" << maxRetries << std::endl;
+                usleep(100000); // 100ms delay before retry
+            }
+        }
+        
+        if (sent <= 0) {
+            std::cerr << "[FTP] Failed to transfer chunk after " << maxRetries << " retries" << std::endl;
+            return false;
+        }
+        
+        // Progress feedback
+        if (size > 1024 * 1024) { // Show progress for files > 1MB
+            double progress = (double)totalSent / size * 100.0;
+            if ((int)progress % 10 == 0) {
+                std::cout << "[FTP] Transfer progress: " << (int)progress << "%" << std::endl;
+            }
+        }
+    }
+    
+    return true;
+}
+
+bool FtpHandler::receiveWithVerification(int socket, std::vector<char>& buffer, size_t expectedSize)
+{
+    buffer.clear();
+    buffer.reserve(expectedSize);
+    
+    size_t totalReceived = 0;
+    char tempBuffer[8192];
+    const int maxRetries = 3;
+    
+    while (totalReceived < expectedSize) {
+        size_t remainingSize = expectedSize - totalReceived;
+        size_t currentChunkSize = std::min(sizeof(tempBuffer), remainingSize);
+        
+        int retries = 0;
+        ssize_t received = 0;
+        
+        while (retries < maxRetries) {
+            received = recv(socket, tempBuffer, currentChunkSize, 0);
+            
+            if (received > 0) {
+                buffer.insert(buffer.end(), tempBuffer, tempBuffer + received);
+                totalReceived += received;
+                break;
+            } else if (received == -1) {
+                retries++;
+                std::cerr << "[FTP] Receive retry " << retries << "/" << maxRetries << std::endl;
+                usleep(100000); // 100ms delay before retry
+            }
+        }
+        
+        if (received <= 0) {
+            std::cerr << "[FTP] Failed to receive chunk after " << maxRetries << " retries" << std::endl;
+            return false;
+        }
+    }
+    
+    return (totalReceived == expectedSize);
+}
+
+bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<char>& fileData)
+{
+    std::cout << "[FTP] Starting optimized upload for: " << filename << std::endl;
+    
+    // Calculate original file hash for integrity verification
+    std::string originalHash = calculateFileHash(fileData);
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    try {
+        // Process the file with integrity tracking
+        processFile(filename, fileData);
+        
+        // Optimized save with verification
+        std::string safeFilename = getSafeFilename(filename);
+        std::string fullPath = storageDirectory + safeFilename;
+        
+        // Create output stream with binary mode for perfect quality preservation
+        std::ofstream file(fullPath, std::ios::binary | std::ios::out);
+        if (!file.is_open()) {
+            std::cerr << "[FTP] Failed to create file: " << fullPath << std::endl;
+            return false;
+        }
+        
+        // Write in optimized chunks
+        const size_t CHUNK_SIZE = 65536; // 64KB chunks for optimal performance
+        size_t totalWritten = 0;
+        
+        while (totalWritten < fileData.size()) {
+            size_t remainingSize = fileData.size() - totalWritten;
+            size_t currentChunkSize = std::min(CHUNK_SIZE, remainingSize);
+            
+            file.write(fileData.data() + totalWritten, currentChunkSize);
+            
+            if (file.fail()) {
+                std::cerr << "[FTP] Write error at position " << totalWritten << std::endl;
+                file.close();
+                return false;
+            }
+            
+            totalWritten += currentChunkSize;
+            
+            // Flush after each chunk to ensure data integrity
+            file.flush();
+        }
+        
+        file.close();
+        
+        // Verify file was written correctly by reading it back
+        std::ifstream verifyFile(fullPath, std::ios::binary);
+        if (!verifyFile.is_open()) {
+            std::cerr << "[FTP] Failed to open file for verification" << std::endl;
+            return false;
+        }
+        
+        std::vector<char> verifyData((std::istreambuf_iterator<char>(verifyFile)),
+                                     std::istreambuf_iterator<char>());
+        verifyFile.close();
+        
+        // Verify integrity
+        bool integrityValid = verifyIntegrity(verifyData, originalHash);
+        
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        
+        if (integrityValid) {
+            std::cout << "[FTP] Optimized upload completed successfully in " << duration.count() << "ms" << std::endl;
+            std::cout << "[FTP] File quality maintained - byte-perfect transfer" << std::endl;
+            std::cout << "[FTP] File saved to: " << fullPath << std::endl;
+            return true;
+        } else {
+            std::cerr << "[FTP] File integrity verification failed!" << std::endl;
+            // Remove corrupted file
+            std::filesystem::remove(fullPath);
+            return false;
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[FTP] Optimized upload error: " << e.what() << std::endl;
+        return false;
+    }
 }
