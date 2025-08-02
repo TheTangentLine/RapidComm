@@ -5,10 +5,17 @@ Modern HTTP file upload server built with C++.
 ## Architecture
 
 ```
-Frontend (3000) → Backend (8080) → Storage Service → ./uploads/
+┌─────────────┐    HTTP POST     ┌─────────────┐    Direct I/O    ┌─────────────┐
+│   Frontend  │ ───────────────→ │   Backend   │ ───────────────→ │   Storage   │
+│             │                  │             │                  │   Service   │
+│ • File Hash │ ← Upload Progress│ • Integrity │ ← Hash Verify ── │ • Atomic    │
+│ • Progress  │   & Verification │ • Multipart │   & Chunked I/O  │ • Verified  │
+│ • Retry     │                  │ • CORS      │                  │ • Safe Path │
+└─────────────┘                  └─────────────┘                  └─────────────┘
+      :3000                            :8080                         ./uploads/
 ```
 
-User uploads file via web interface, backend processes it, storage service saves to disk.
+**Workflow**: Client calculates hash → Upload with integrity data → Backend verifies → Storage writes atomically → Hash comparison → Success response
 
 ## File Structure
 

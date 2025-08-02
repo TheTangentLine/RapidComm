@@ -809,21 +809,10 @@
           submitBtn.textContent = "Preparing upload...";
           progressContainer.style.display = "block";
 
-          try {
-            // Calculate file hash before upload for integrity verification
-            submitBtn.textContent = "Calculating file hash...";
-            const originalHash = await calculateFileHash(selectedFile);
-            console.log(
-              `[Upload] File hash calculated: ${originalHash.substring(
-                0,
-                16
-              )}...`
-            );
-
-            // Create FormData for file upload with integrity information
+                      try {
+            // Create FormData for fast file upload
             const formData = new FormData();
             formData.append("file", selectedFile);
-            formData.append("originalHash", originalHash);
             formData.append("originalSize", selectedFile.size.toString());
             formData.append("timestamp", Date.now().toString());
 
@@ -875,37 +864,18 @@
               if (xhr.status === 200) {
                 try {
                   const response = JSON.parse(xhr.responseText);
-                  if (response.status === "success") {
-                    // Perform integrity verification
-                    submitBtn.textContent = "Verifying integrity...";
+                                     if (response.status === "success") {
+                     const fileType = response.type || "file";
+                     const fileSize = response.size
+                       ? ` (${formatFileSize(response.size)})`
+                       : "";
+                     const message = `${response.message}${fileSize} ✅ Upload complete`;
+                     showMessage(message, "success");
 
-                    const integrityValid = await verifyFileIntegrity(
-                      selectedFile,
-                      response.size || selectedFile.size,
-                      response.hash || ""
-                    );
-
-                    if (integrityValid) {
-                      const fileType = response.type || "file";
-                      const fileSize = response.size
-                        ? ` (${formatFileSize(response.size)})`
-                        : "";
-                      const message = `${response.message}${fileSize} ✅ Integrity verified`;
-                      showMessage(message, "success");
-
-                      // Log successful upload details with verification
-                      console.log(
-                        `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Integrity: ✅ VERIFIED`
-                      );
-                    } else {
-                      showMessage(
-                        "Upload completed but file integrity check FAILED. File may be corrupted!",
-                        "error"
-                      );
-                      console.error(
-                        "[Upload] File integrity verification failed!"
-                      );
-                    }
+                     // Log successful upload details
+                     console.log(
+                       `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Status: ✅ SUCCESS`
+                     );
                   } else {
                     showMessage("Upload failed: " + response.message, "error");
                   }

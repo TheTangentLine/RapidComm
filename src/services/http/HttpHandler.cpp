@@ -204,11 +204,8 @@ void HttpHandler::handleFileUpload(const std::string &request)
     std::string result = parseMultipartData(request, filename, fileData, originalHash, originalSize, timestamp);
     
     if (result == "success") {
-        // Debug: Log file data info for verification
-        std::cout << COLOR_BLUE << "[Backend] Parsed file: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
-        if (!originalHash.empty()) {
-            std::cout << COLOR_BLUE << "[Backend] Client hash: " << originalHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
-        }
+        // Log file upload info
+        std::cout << COLOR_BLUE << "[Backend] Processing file: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
         // Determine file type for appropriate handling
         std::string fileExtension = "";
         size_t dotPos = filename.find_last_of('.');
@@ -238,29 +235,9 @@ void HttpHandler::handleFileUpload(const std::string &request)
         
         if (saveSuccess.first) {
             std::string message = isVideo ? "Video uploaded successfully" : "File uploaded successfully";
-            std::string serverHash = saveSuccess.second; // Get the calculated server hash
+            std::cout << COLOR_GREEN << "[Backend] " << message << ": " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
             
-            // Perform server-side integrity verification if original hash was provided
-            if (!originalHash.empty() && !serverHash.empty()) {
-                // Debug: Print full hash details
-                std::cout << COLOR_BLUE << "[Backend] Hash comparison debug:" << COLOR_RESET << std::endl;
-                std::cout << COLOR_BLUE << "[Backend] Original length: " << originalHash.length() << ", Server length: " << serverHash.length() << COLOR_RESET << std::endl;
-                std::cout << COLOR_BLUE << "[Backend] Original full: '" << originalHash << "'" << COLOR_RESET << std::endl;
-                std::cout << COLOR_BLUE << "[Backend] Server full:   '" << serverHash << "'" << COLOR_RESET << std::endl;
-                
-                if (originalHash == serverHash) {
-                    std::cout << COLOR_GREEN << "[Backend] File integrity verified ✅" << COLOR_RESET << std::endl;
-                    message += " (integrity verified)";
-                } else {
-                    std::cout << COLOR_RED << "[Backend] File integrity check FAILED ❌" << COLOR_RESET << std::endl;
-                    std::cout << COLOR_RED << "[Backend] Expected: " << originalHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
-                    std::cout << COLOR_RED << "[Backend] Got: " << serverHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
-                    sendErrorResponse(500, "File integrity verification failed - upload corrupted");
-                    return;
-                }
-            }
-            
-            sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + ",\"hash\":\"" + serverHash + "\"}");
+            sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + "}");
         } else {
             std::cout << COLOR_RED << "[Backend] Storage failed for " << fileType << ": " << filename << COLOR_RESET << std::endl;
             sendErrorResponse(500, "Failed to save " + fileType + " to storage - atomic operation failed");
