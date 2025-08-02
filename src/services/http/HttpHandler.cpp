@@ -197,12 +197,9 @@ void HttpHandler::handleFileUpload(const std::string &request)
         
         // Send file to FTP server using optimized upload
         FtpHandler ftpClient; // Client mode constructor
-        std::cout << "[Backend] Using optimized upload for quality preservation" << std::endl;
         ftpClient.handleFileUpload(filename, fileData);
         
-        // The optimized upload includes integrity verification
-        std::cout << "[Backend] File processed with quality optimization" << std::endl;
-        sendJsonResponse("{\"status\":\"success\",\"message\":\"File uploaded with quality optimization and integrity verification\",\"filename\":\"" + filename + "\"}");
+        sendJsonResponse("{\"status\":\"success\",\"message\":\"File uploaded successfully\",\"filename\":\"" + filename + "\"}");
     } else {
         std::cout << "[Backend] File upload failed: " << result << std::endl;
         sendErrorResponse(400, result);

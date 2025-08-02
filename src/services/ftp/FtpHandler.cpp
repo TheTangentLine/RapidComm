@@ -14,6 +14,13 @@
 #include <chrono>
 #include <functional>
 
+// Colors for terminal output
+#define COLOR_GREEN   "\033[0;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_BLUE    "\033[0;34m"
+#define COLOR_CYAN    "\033[0;36m"
+#define COLOR_RESET   "\033[0m"
+
 // ----------------------------- Constructor --------------------------------->
 
 FtpHandler::FtpHandler(int clientSocket) 
@@ -122,22 +129,19 @@ void FtpHandler::handleConnection()
 
 void FtpHandler::handleFileUpload(const std::string& filename, const std::vector<char>& fileData)
 {
-    std::cout << "[FTP] Handling optimized file upload: " << filename << " (" << fileData.size() << " bytes)" << std::endl;
+    std::cout << COLOR_BLUE << "[FTP] Uploading: " << filename << " (" << getFileSizeString(fileData.size()) << ")" << COLOR_RESET << std::endl;
     
     // Calculate file integrity hash before processing
     std::string fileHash = calculateFileHash(fileData);
-    std::cout << "[FTP] File integrity hash: " << fileHash << std::endl;
     
     // Use optimized upload method
     bool uploaded = optimizedUpload(filename, fileData);
     
     if (uploaded) {
-        // Verify integrity after upload
-        std::cout << "[FTP] File upload completed successfully: " << filename << std::endl;
-        std::cout << "[FTP] Quality maintained - Hash verified" << std::endl;
+        std::cout << COLOR_GREEN << "[FTP] Upload completed: " << filename << COLOR_RESET << std::endl;
         sendResponse("UPLOAD_SUCCESS File uploaded with integrity verification");
     } else {
-        std::cout << "[FTP] Optimized file upload failed: " << filename << std::endl;
+        std::cout << COLOR_YELLOW << "[FTP] Upload failed: " << filename << COLOR_RESET << std::endl;
         sendResponse("UPLOAD_ERROR Failed to upload with quality assurance");
     }
 }
@@ -224,9 +228,9 @@ bool FtpHandler::uploadFileToServer(const std::string& filename, const std::vect
 
 // ----------------------------- File Processing ------------------------------>
 
-void FtpHandler::processFile(const std::string& filename, const std::vector<char>& fileData)
+void FtpHandler::processFile(const std::string& /*filename*/, const std::vector<char>& /*fileData*/)
 {
-    std::cout << "[FTP] Processing file: " << filename << " (" << getFileSizeString(fileData.size()) << ", " << getFileType(filename) << ")" << std::endl;
+    // File processing happens silently - no output needed
 }
 
 void FtpHandler::displayFileContent(const std::string& filename, const std::vector<char>& fileData)
@@ -500,13 +504,7 @@ std::string FtpHandler::calculateFileHash(const std::vector<char>& data)
 bool FtpHandler::verifyIntegrity(const std::vector<char>& data, const std::string& expectedHash)
 {
     std::string actualHash = calculateFileHash(data);
-    bool isValid = (actualHash == expectedHash);
-    
-    std::cout << "[FTP] Integrity check - Expected: " << expectedHash.substr(0, 16) << "..." << std::endl;
-    std::cout << "[FTP] Integrity check - Actual:   " << actualHash.substr(0, 16) << "..." << std::endl;
-    std::cout << "[FTP] Integrity status: " << (isValid ? "VALID" : "CORRUPTED") << std::endl;
-    
-    return isValid;
+    return (actualHash == expectedHash);
 }
 
 bool FtpHandler::transferChunk(int socket, const char* data, size_t size, size_t chunkSize)
@@ -592,12 +590,8 @@ bool FtpHandler::receiveWithVerification(int socket, std::vector<char>& buffer, 
 
 bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<char>& fileData)
 {
-    std::cout << "[FTP] Starting optimized upload for: " << filename << std::endl;
-    
     // Calculate original file hash for integrity verification
     std::string originalHash = calculateFileHash(fileData);
-    
-    auto startTime = std::chrono::high_resolution_clock::now();
     
     try {
         // Process the file with integrity tracking
@@ -610,7 +604,6 @@ bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<
         // Create output stream with binary mode for perfect quality preservation
         std::ofstream file(fullPath, std::ios::binary | std::ios::out);
         if (!file.is_open()) {
-            std::cerr << "[FTP] Failed to create file: " << fullPath << std::endl;
             return false;
         }
         
@@ -625,14 +618,11 @@ bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<
             file.write(fileData.data() + totalWritten, currentChunkSize);
             
             if (file.fail()) {
-                std::cerr << "[FTP] Write error at position " << totalWritten << std::endl;
                 file.close();
                 return false;
             }
             
             totalWritten += currentChunkSize;
-            
-            // Flush after each chunk to ensure data integrity
             file.flush();
         }
         
@@ -641,7 +631,6 @@ bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<
         // Verify file was written correctly by reading it back
         std::ifstream verifyFile(fullPath, std::ios::binary);
         if (!verifyFile.is_open()) {
-            std::cerr << "[FTP] Failed to open file for verification" << std::endl;
             return false;
         }
         
@@ -652,23 +641,15 @@ bool FtpHandler::optimizedUpload(const std::string& filename, const std::vector<
         // Verify integrity
         bool integrityValid = verifyIntegrity(verifyData, originalHash);
         
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        
         if (integrityValid) {
-            std::cout << "[FTP] Optimized upload completed successfully in " << duration.count() << "ms" << std::endl;
-            std::cout << "[FTP] File quality maintained - byte-perfect transfer" << std::endl;
-            std::cout << "[FTP] File saved to: " << fullPath << std::endl;
             return true;
         } else {
-            std::cerr << "[FTP] File integrity verification failed!" << std::endl;
             // Remove corrupted file
             std::filesystem::remove(fullPath);
             return false;
         }
         
     } catch (const std::exception& e) {
-        std::cerr << "[FTP] Optimized upload error: " << e.what() << std::endl;
         return false;
     }
 }
