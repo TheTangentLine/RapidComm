@@ -27,7 +27,8 @@ private:
     
     // File upload handling
     void handleFileUpload(const std::string &request);
-    std::string parseMultipartData(const std::string &request, std::string &filename, std::vector<char> &fileData);
+    std::string parseMultipartData(const std::string &request, std::string &filename, std::vector<char> &fileData, 
+                                   std::string &originalHash, std::string &originalSize, std::string &timestamp);
     std::string getBoundary(const std::string &contentType);
     
     // CORS and response helpers
@@ -38,6 +39,7 @@ private:
     // Request parsing helpers
     std::map<std::string, std::string> parseHeaders(const std::string &request);
     std::string getRequestBody(const std::string &request);
+    void parseIntegrityFields(const std::string &body, std::string &originalHash, std::string &originalSize, std::string &timestamp);
 };
 
 #endif

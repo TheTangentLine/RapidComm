@@ -1,5 +1,5 @@
 #include "HttpHandler.hpp"
-#include "../ftp/FtpHandler.hpp"
+#include "../storage/StorageService.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -193,28 +193,75 @@ std::string HttpHandler::getHtmlContent(const std::string &route)
 
 void HttpHandler::handleFileUpload(const std::string &request)
 {
-    std::cout << COLOR_YELLOW << "[Backend] Processing file upload..." << COLOR_RESET << std::endl;
+    std::cout << COLOR_YELLOW << "[Backend] Processing file upload with integrity verification..." << COLOR_RESET << std::endl;
     
     std::string filename;
     std::vector<char> fileData;
+    std::string originalHash;
+    std::string originalSize;
+    std::string timestamp;
     
-    std::string result = parseMultipartData(request, filename, fileData);
+    std::string result = parseMultipartData(request, filename, fileData, originalHash, originalSize, timestamp);
     
     if (result == "success") {
-        std::cout << COLOR_GREEN << "[Backend] File upload successful: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
+        // Determine file type for appropriate handling
+        std::string fileExtension = "";
+        size_t dotPos = filename.find_last_of('.');
+        if (dotPos != std::string::npos) {
+            fileExtension = filename.substr(dotPos + 1);
+            std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
+        }
         
-        // Send file to FTP server using optimized upload
-        FtpHandler ftpClient; // Client mode constructor
-        ftpClient.handleFileUpload(filename, fileData);
+        // Check if it's a video file
+        bool isVideo = (fileExtension == "mp4" || fileExtension == "avi" || fileExtension == "mov" || 
+                       fileExtension == "wmv" || fileExtension == "flv" || fileExtension == "webm" || 
+                       fileExtension == "mkv" || fileExtension == "m4v" || fileExtension == "3gp" || 
+                       fileExtension == "ogv" || fileExtension == "ts" || fileExtension == "mts" || 
+                       fileExtension == "m2ts" || fileExtension == "vob" || fileExtension == "asf");
         
-        sendJsonResponse("{\"status\":\"success\",\"message\":\"File uploaded successfully\",\"filename\":\"" + filename + "\"}");
+        std::string fileType = isVideo ? "video" : "file";
+        std::cout << COLOR_GREEN << "[Backend] " << fileType << " upload successful: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
+        
+        // For large video files, log additional info
+        if (isVideo && fileData.size() > 50 * 1024 * 1024) { // > 50MB
+            std::cout << COLOR_YELLOW << "[Backend] Large video file detected, using optimized processing..." << COLOR_RESET << std::endl;
+        }
+        
+        // Save file using storage service
+        StorageService storage;
+        auto saveSuccess = storage.saveFileWithVerification(filename, fileData);
+        
+        if (saveSuccess.first) {
+            std::string message = isVideo ? "Video uploaded successfully" : "File uploaded successfully";
+            std::string serverHash = saveSuccess.second; // Get the calculated server hash
+            
+            // Perform server-side integrity verification if original hash was provided
+            if (!originalHash.empty() && !serverHash.empty()) {
+                if (originalHash == serverHash) {
+                    std::cout << COLOR_GREEN << "[Backend] File integrity verified ✅" << COLOR_RESET << std::endl;
+                    message += " (integrity verified)";
+                } else {
+                    std::cout << COLOR_RED << "[Backend] File integrity check FAILED ❌" << COLOR_RESET << std::endl;
+                    std::cout << COLOR_RED << "[Backend] Expected: " << originalHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
+                    std::cout << COLOR_RED << "[Backend] Got: " << serverHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
+                    sendErrorResponse(500, "File integrity verification failed - upload corrupted");
+                    return;
+                }
+            }
+            
+            sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + ",\"hash\":\"" + serverHash + "\"}");
+        } else {
+            std::cout << COLOR_RED << "[Backend] Storage failed for " << fileType << ": " << filename << COLOR_RESET << std::endl;
+            sendErrorResponse(500, "Failed to save " + fileType + " to storage - atomic operation failed");
+        }
     } else {
         std::cout << COLOR_RED << "[Backend] File upload failed: " << result << COLOR_RESET << std::endl;
         sendErrorResponse(400, result);
     }
 }
 
-std::string HttpHandler::parseMultipartData(const std::string &request, std::string &filename, std::vector<char> &fileData)
+std::string HttpHandler::parseMultipartData(const std::string &request, std::string &filename, std::vector<char> &fileData, 
+                                           std::string &originalHash, std::string &originalSize, std::string &timestamp)
 {
     // Parse headers to get content type and boundary
     auto headers = parseHeaders(request);
@@ -319,6 +366,9 @@ std::string HttpHandler::parseMultipartData(const std::string &request, std::str
         return "Invalid file size";
     }
     
+    // Parse additional integrity fields
+    parseIntegrityFields(body, originalHash, originalSize, timestamp);
+    
     return "success";
 }
 
@@ -402,6 +452,53 @@ std::string HttpHandler::getRequestBody(const std::string &request)
     }
     
     return request.substr(bodyStart + 4);
+}
+
+void HttpHandler::parseIntegrityFields(const std::string &body, std::string &originalHash, std::string &originalSize, std::string &timestamp)
+{
+    // Parse originalHash field
+    size_t hashPos = body.find("name=\"originalHash\"");
+    if (hashPos != std::string::npos) {
+        size_t valueStart = body.find("\r\n\r\n", hashPos);
+        if (valueStart != std::string::npos) {
+            valueStart += 4;
+            size_t valueEnd = body.find("\r\n--", valueStart);
+            if (valueEnd != std::string::npos) {
+                originalHash = body.substr(valueStart, valueEnd - valueStart);
+            }
+        }
+    }
+    
+    // Parse originalSize field
+    size_t sizePos = body.find("name=\"originalSize\"");
+    if (sizePos != std::string::npos) {
+        size_t valueStart = body.find("\r\n\r\n", sizePos);
+        if (valueStart != std::string::npos) {
+            valueStart += 4;
+            size_t valueEnd = body.find("\r\n--", valueStart);
+            if (valueEnd != std::string::npos) {
+                originalSize = body.substr(valueStart, valueEnd - valueStart);
+            }
+        }
+    }
+    
+    // Parse timestamp field
+    size_t timestampPos = body.find("name=\"timestamp\"");
+    if (timestampPos != std::string::npos) {
+        size_t valueStart = body.find("\r\n\r\n", timestampPos);
+        if (valueStart != std::string::npos) {
+            valueStart += 4;
+            size_t valueEnd = body.find("\r\n--", valueStart);
+            if (valueEnd != std::string::npos) {
+                timestamp = body.substr(valueStart, valueEnd - valueStart);
+            }
+        }
+    }
+    
+    // Log integrity information
+    if (!originalHash.empty()) {
+        std::cout << COLOR_BLUE << "[Backend] Integrity info received - Hash: " << originalHash.substr(0, 16) << "..., Size: " << originalSize << COLOR_RESET << std::endl;
+    }
 }
 
 // ---------------------------- Stop listening ------------------------------>

@@ -1,7 +1,6 @@
 #include "ServerManager.hpp"
 #include "../socket/Socket.hpp"
 #include "../http/HttpHandler.hpp"
-#include "../ftp/FtpHandler.hpp"
 #include <iostream>
 #include <thread>
 #include <sys/socket.h>
@@ -19,11 +18,10 @@
 
 #define FRONTEND_PORT 3000
 #define BACKEND_PORT 8080
-#define FTP_PORT 2121
 
 std::atomic<bool> ServerManager::serverRunning(true);
 
-ServerManager::ServerManager() : frontendSocket(nullptr), backendSocket(nullptr), ftpSocket(nullptr) {}
+ServerManager::ServerManager() : frontendSocket(nullptr), backendSocket(nullptr) {}
 
 ServerManager::~ServerManager() {
     stopAllServers();
@@ -39,11 +37,11 @@ bool ServerManager::isServerRunning() {
 
 void ServerManager::startAllServers() {
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
-    std::cout << COLOR_BLUE << "  HTTP-FTP File Upload Server" << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "  RapidComm File Upload Server" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Frontend: http://localhost:" << FRONTEND_PORT << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Backend:  http://localhost:" << BACKEND_PORT << COLOR_RESET << std::endl;
-    std::cout << COLOR_GREEN << "FTP:      localhost:" << FTP_PORT << COLOR_RESET << std::endl;
+    std::cout << COLOR_CYAN << "Storage:  ./uploads/" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
@@ -52,11 +50,9 @@ void ServerManager::startAllServers() {
     try {
         std::thread frontendThread(&ServerManager::runFrontendServer, this);
         std::thread backendThread(&ServerManager::runBackendServer, this);
-        std::thread ftpThread(&ServerManager::runFtpServer, this);
         
         frontendThread.join();
         backendThread.join();
-        ftpThread.join();
         
     } catch (const std::exception& e) {
         std::cerr << "[Main] Error starting servers: " << e.what() << std::endl;
@@ -76,9 +72,6 @@ void ServerManager::stopAllServers() {
     }
     if (backendSocket) {
         close(backendSocket->getServerSocket());
-    }
-    if (ftpSocket) {
-        close(ftpSocket->getServerSocket());
     }
     
     std::cout << COLOR_CYAN << "[ServerManager] Server sockets closed" << COLOR_RESET << std::endl;
@@ -150,35 +143,3 @@ void ServerManager::runBackendServer() {
     }
 }
 
-void ServerManager::runFtpServer() {
-    try {
-        Socket ftpServer(FTP_PORT);
-        ftpSocket = &ftpServer;
-        ftpServer.listenSocket();
-        
-        std::cout << COLOR_GREEN << "[FTP] Server started on port " << FTP_PORT << COLOR_RESET << std::endl;
-        std::cout.flush();
-        
-        while (serverRunning) {
-            int clientSocket = accept(ftpServer.getServerSocket(), nullptr, nullptr);
-            
-            if (clientSocket == -1) {
-                if (serverRunning) {
-                    std::cerr << "[FTP] Accept failed: " << strerror(errno) << std::endl;
-                }
-                break; // Exit loop on error
-            }
-            
-            if (!serverRunning) break; // Check again after accept
-            
-            FtpHandler ftpHandler(clientSocket);
-            ftpHandler.handleConnection();
-        }
-        
-        ftpSocket = nullptr;
-        std::cout << COLOR_CYAN << "[FTP] Server stopped" << COLOR_RESET << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "[FTP] Server error: " << e.what() << std::endl;
-        ftpSocket = nullptr;
-    }
-}
