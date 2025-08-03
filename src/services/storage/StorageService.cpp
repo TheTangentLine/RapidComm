@@ -128,12 +128,12 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
         
         // Calculate SHA-256 hash for bit-perfect verification
         std::string sha256Hash = calculateSHA256Hash(fileData);
-        logInfo("Calculated SHA-256 hash: " + sha256Hash.substr(0, 16) + "...");
-        logInfo("File data size for hashing: " + std::to_string(fileData.size()) + " bytes");
+        // Hash calculated silently
+        // File data processed silently
         
         // Write file using atomic chunked method for all files
         std::string fileType = getFileType(filename);
-        logInfo("Using atomic chunked write for " + fileType + " file: " + filename);
+        // Using atomic chunked write silently
         
         auto writeResult = writeFileInChunksAtomic(fullPath, fileData);
         bool writeSuccess = writeResult.first;
