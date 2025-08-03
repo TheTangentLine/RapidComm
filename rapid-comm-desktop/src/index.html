@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="./styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RapidComm Control Panel</title>
+  </head>
+
+  <body>
+    <div class="particles" id="particles"></div>
+    <div class="container">
+      <h1>Server Control Panel</h1>
+
+      <div class="status-section">
+        <h2>Server Status</h2>
+        <div class="status-display">
+          <span class="status-light" id="statusLight"></span>
+          <span class="status-text" id="statusText">Connecting...</span>
+        </div>
+      </div>
+
+      <div class="ip-section">
+        <h2>Shareable Server Address</h2>
+        <div id="ipAddressContainer">
+          <div id="ipAddress" class="ip-address">-</div>
+          <div class="copy-tooltip">Click to copy</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="toggleBtn">Start Server</button>
+      </div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
