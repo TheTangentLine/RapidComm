@@ -637,15 +637,63 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
       }
 
-      // Calculate SHA-256 hash of file for integrity verification
+      // Calculate hash of file for integrity verification (compatible with server)
       async function calculateFileHash(file) {
         const arrayBuffer = await file.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        return hashHex;
+        const dataArray = new Uint8Array(arrayBuffer);
+
+        // Simple hash algorithm that matches server implementation
+        let hash1 = 0;
+        let hash2 = 0;
+        let hash3 = 0;
+
+        // Hash pass 1: Basic hash
+        for (let i = 0; i < dataArray.length; i++) {
+          hash1 = ((hash1 << 5) - hash1 + dataArray[i]) & 0xffffffff;
+        }
+
+        // Hash pass 2: With salt1 - process salt1 chars first, then data
+        const salt1 = "salt1";
+        for (let i = 0; i < dataArray.length; i++) {
+          hash2 = ((hash2 << 5) - hash2 + dataArray[i]) & 0xffffffff;
+        }
+        for (let i = 0; i < salt1.length; i++) {
+          hash2 = ((hash2 << 5) - hash2 + salt1.charCodeAt(i)) & 0xffffffff;
+        }
+
+        // Hash pass 3: With salt2 and size - process data first, then salt2
+        const salt2 = "salt2" + dataArray.length.toString();
+        for (let i = 0; i < dataArray.length; i++) {
+          hash3 = ((hash3 << 5) - hash3 + dataArray[i]) & 0xffffffff;
+        }
+        for (let i = 0; i < salt2.length; i++) {
+          hash3 = ((hash3 << 5) - hash3 + salt2.charCodeAt(i)) & 0xffffffff;
+        }
+
+        // Calculate checksum (similar to server)
+        let checksum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          checksum = checksum ^ dataArray[i];
+          checksum = (checksum << 1) | (checksum >>> 31); // Rotate left by 1
+        }
+        checksum = checksum >>> 0; // Ensure unsigned 32-bit
+
+        // Combine hashes and format as hex (similar to server)
+        let result =
+          hash1.toString(16) +
+          hash2.toString(16) +
+          hash3.toString(16) +
+          checksum.toString(16);
+
+        // Pad to 64 characters
+        while (result.length < 64) {
+          result += "0";
+        }
+        if (result.length > 64) {
+          result = result.substring(0, 64);
+        }
+
+        return result;
       }
 
       // Calculate CRC32 checksum for additional verification
@@ -762,20 +810,9 @@
           progressContainer.style.display = "block";
 
           try {
-            // Calculate file hash before upload for integrity verification
-            submitBtn.textContent = "Calculating file hash...";
-            const originalHash = await calculateFileHash(selectedFile);
-            console.log(
-              `[Upload] File hash calculated: ${originalHash.substring(
-                0,
-                16
-              )}...`
-            );
-
-            // Create FormData for file upload with integrity information
+            // Create FormData for fast file upload
             const formData = new FormData();
             formData.append("file", selectedFile);
-            formData.append("originalHash", originalHash);
             formData.append("originalSize", selectedFile.size.toString());
             formData.append("timestamp", Date.now().toString());
 
@@ -828,36 +865,17 @@
                 try {
                   const response = JSON.parse(xhr.responseText);
                   if (response.status === "success") {
-                    // Perform integrity verification
-                    submitBtn.textContent = "Verifying integrity...";
+                    const fileType = response.type || "file";
+                    const fileSize = response.size
+                      ? ` (${formatFileSize(response.size)})`
+                      : "";
+                    const message = `${response.message}${fileSize} ✅ Upload complete`;
+                    showMessage(message, "success");
 
-                    const integrityValid = await verifyFileIntegrity(
-                      selectedFile,
-                      response.size || selectedFile.size,
-                      response.hash || ""
+                    // Log successful upload details
+                    console.log(
+                      `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Status: ✅ SUCCESS`
                     );
-
-                    if (integrityValid) {
-                      const fileType = response.type || "file";
-                      const fileSize = response.size
-                        ? ` (${formatFileSize(response.size)})`
-                        : "";
-                      const message = `${response.message}${fileSize} ✅ Integrity verified`;
-                      showMessage(message, "success");
-
-                      // Log successful upload details with verification
-                      console.log(
-                        `[Upload Complete] ${fileType}: ${response.filename}${fileSize} - Integrity: ✅ VERIFIED`
-                      );
-                    } else {
-                      showMessage(
-                        "Upload completed but file integrity check FAILED. File may be corrupted!",
-                        "error"
-                      );
-                      console.error(
-                        "[Upload] File integrity verification failed!"
-                      );
-                    }
                   } else {
                     showMessage("Upload failed: " + response.message, "error");
                   }

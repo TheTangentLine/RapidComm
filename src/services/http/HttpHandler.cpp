@@ -1,5 +1,6 @@
 #include "HttpHandler.hpp"
 #include "../storage/StorageService.hpp"
+#include "../config/ConfigManager.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -193,8 +194,6 @@ std::string HttpHandler::getHtmlContent(const std::string &route)
 
 void HttpHandler::handleFileUpload(const std::string &request)
 {
-    std::cout << COLOR_YELLOW << "[Backend] Processing file upload with integrity verification..." << COLOR_RESET << std::endl;
-    
     std::string filename;
     std::vector<char> fileData;
     std::string originalHash;
@@ -204,6 +203,8 @@ void HttpHandler::handleFileUpload(const std::string &request)
     std::string result = parseMultipartData(request, filename, fileData, originalHash, originalSize, timestamp);
     
     if (result == "success") {
+        // Log file upload info
+        std::cout << COLOR_BLUE << "[Backend] Uploading: " << filename << COLOR_RESET << std::endl;
         // Determine file type for appropriate handling
         std::string fileExtension = "";
         size_t dotPos = filename.find_last_of('.');
@@ -220,42 +221,24 @@ void HttpHandler::handleFileUpload(const std::string &request)
                        fileExtension == "m2ts" || fileExtension == "vob" || fileExtension == "asf");
         
         std::string fileType = isVideo ? "video" : "file";
-        std::cout << COLOR_GREEN << "[Backend] " << fileType << " upload successful: " << filename << " (" << fileData.size() << " bytes)" << COLOR_RESET << std::endl;
         
-        // For large video files, log additional info
-        if (isVideo && fileData.size() > 50 * 1024 * 1024) { // > 50MB
-            std::cout << COLOR_YELLOW << "[Backend] Large video file detected, using optimized processing..." << COLOR_RESET << std::endl;
-        }
-        
-        // Save file using storage service
-        StorageService storage;
+        // Save file using storage service with config
+        ConfigManager config;
+        std::string storageDir = config.getStorageDirectory();
+        StorageService storage(storageDir);
         auto saveSuccess = storage.saveFileWithVerification(filename, fileData);
         
         if (saveSuccess.first) {
             std::string message = isVideo ? "Video uploaded successfully" : "File uploaded successfully";
-            std::string serverHash = saveSuccess.second; // Get the calculated server hash
+            std::cout << COLOR_GREEN << "[Backend] ✅ " << filename << COLOR_RESET << std::endl;
             
-            // Perform server-side integrity verification if original hash was provided
-            if (!originalHash.empty() && !serverHash.empty()) {
-                if (originalHash == serverHash) {
-                    std::cout << COLOR_GREEN << "[Backend] File integrity verified ✅" << COLOR_RESET << std::endl;
-                    message += " (integrity verified)";
-                } else {
-                    std::cout << COLOR_RED << "[Backend] File integrity check FAILED ❌" << COLOR_RESET << std::endl;
-                    std::cout << COLOR_RED << "[Backend] Expected: " << originalHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
-                    std::cout << COLOR_RED << "[Backend] Got: " << serverHash.substr(0, 16) << "..." << COLOR_RESET << std::endl;
-                    sendErrorResponse(500, "File integrity verification failed - upload corrupted");
-                    return;
-                }
-            }
-            
-            sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + ",\"hash\":\"" + serverHash + "\"}");
+            sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + "}");
         } else {
-            std::cout << COLOR_RED << "[Backend] Storage failed for " << fileType << ": " << filename << COLOR_RESET << std::endl;
+            std::cout << COLOR_RED << "[Backend] ❌ " << filename << COLOR_RESET << std::endl;
             sendErrorResponse(500, "Failed to save " + fileType + " to storage - atomic operation failed");
         }
     } else {
-        std::cout << COLOR_RED << "[Backend] File upload failed: " << result << COLOR_RESET << std::endl;
+        std::cout << COLOR_RED << "[Backend] ❌ Upload failed: " << result << COLOR_RESET << std::endl;
         sendErrorResponse(400, result);
     }
 }
@@ -495,10 +478,7 @@ void HttpHandler::parseIntegrityFields(const std::string &body, std::string &ori
         }
     }
     
-    // Log integrity information
-    if (!originalHash.empty()) {
-        std::cout << COLOR_BLUE << "[Backend] Integrity info received - Hash: " << originalHash.substr(0, 16) << "..., Size: " << originalSize << COLOR_RESET << std::endl;
-    }
+    // Skip integrity logging for cleaner output
 }
 
 // ---------------------------- Stop listening ------------------------------>

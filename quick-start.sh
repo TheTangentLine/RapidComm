@@ -25,7 +25,7 @@ fi
 print_header() {
     echo -e "${BLUE}"
     echo "=================================================="
-    echo "  HTTP-FTP File Upload Server Quick Start"
+    echo "  RapidComm File Upload Server Quick Start"
     echo "=================================================="
     echo -e "${NC}"
 }
@@ -41,7 +41,7 @@ print_success() {
 print_header
 
 # Check if binary exists
-if [ ! -f "build/bin/http-ftp-server" ]; then
+if [ ! -f "build/bin/rapidcomm-server" ]; then
     print_info "Building the server..."
     make
     echo ""

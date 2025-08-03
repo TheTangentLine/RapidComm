@@ -1,6 +1,7 @@
 #include "ServerManager.hpp"
 #include "../socket/Socket.hpp"
 #include "../http/HttpHandler.hpp"
+#include "../config/ConfigManager.hpp"
 #include <iostream>
 #include <thread>
 #include <sys/socket.h>
@@ -41,7 +42,8 @@ void ServerManager::startAllServers() {
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Frontend: http://localhost:" << FRONTEND_PORT << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Backend:  http://localhost:" << BACKEND_PORT << COLOR_RESET << std::endl;
-    std::cout << COLOR_CYAN << "Storage:  ./uploads/" << COLOR_RESET << std::endl;
+    ConfigManager config;
+    std::cout << COLOR_CYAN << "Storage:  " << config.getStorageDirectory() << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
@@ -59,11 +61,10 @@ void ServerManager::startAllServers() {
         throw;
     }
     
-    std::cout << COLOR_GREEN << "[Main] All servers stopped successfully" << COLOR_RESET << std::endl;
+    std::cout << COLOR_GREEN << "All servers stopped ✅" << COLOR_RESET << std::endl;
 }
 
 void ServerManager::stopAllServers() {
-    std::cout << COLOR_YELLOW << "[ServerManager] Stopping all servers..." << COLOR_RESET << std::endl;
     serverRunning = false;
     
     // Close all server sockets to interrupt accept() calls
@@ -73,8 +74,6 @@ void ServerManager::stopAllServers() {
     if (backendSocket) {
         close(backendSocket->getServerSocket());
     }
-    
-    std::cout << COLOR_CYAN << "[ServerManager] Server sockets closed" << COLOR_RESET << std::endl;
 }
 
 void ServerManager::runFrontendServer() {
@@ -103,7 +102,7 @@ void ServerManager::runFrontendServer() {
         }
         
         frontendSocket = nullptr;
-        std::cout << COLOR_CYAN << "[Frontend] Server stopped" << COLOR_RESET << std::endl;
+        std::cout << COLOR_GREEN << "Frontend stopped" << COLOR_RESET << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Frontend] Server error: " << e.what() << std::endl;
         frontendSocket = nullptr;
@@ -136,7 +135,7 @@ void ServerManager::runBackendServer() {
         }
         
         backendSocket = nullptr;
-        std::cout << COLOR_CYAN << "[Backend] Server stopped" << COLOR_RESET << std::endl;
+        std::cout << COLOR_GREEN << "Backend stopped" << COLOR_RESET << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[Backend] Server error: " << e.what() << std::endl;
         backendSocket = nullptr;

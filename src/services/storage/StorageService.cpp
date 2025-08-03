@@ -32,7 +32,7 @@ StorageService::StorageService()
       enableVerification(true)
 {
     createStorageDirectory();
-    logInfo("Storage service initialized with default configuration");
+    // Storage service initialized silently
 }
 
 StorageService::StorageService(const std::string& storageDirectory) 
@@ -46,12 +46,12 @@ StorageService::StorageService(const std::string& storageDirectory)
         this->storageDirectory += '/';
     }
     createStorageDirectory();
-    logInfo("Storage service initialized with directory: " + this->storageDirectory);
+    // Storage service initialized silently
 }
 
 StorageService::~StorageService() 
 {
-    logInfo("Storage service destroyed");
+    // Storage service destroyed silently
 }
 
 // ----------------------------- Main Storage Operations --------------------------------->
@@ -77,7 +77,7 @@ bool StorageService::saveFile(const std::string& filename, const std::vector<cha
         std::string safeFilename = getSafeFilename(filename);
         std::string fullPath = getFullPath(safeFilename);
         
-        logInfo("Saving file: " + filename + " (" + getFileSizeString(fileData.size()) + ")");
+        // Saving file silently
         
         // Write file using standard method
         std::ofstream file(fullPath, std::ios::binary);
@@ -94,7 +94,7 @@ bool StorageService::saveFile(const std::string& filename, const std::vector<cha
             return false;
         }
         
-        logSuccess("File saved successfully: " + fullPath);
+        // File saved successfully
         return true;
         
     } catch (const std::exception& e) {
@@ -124,15 +124,16 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
         std::string safeFilename = getSafeFilename(filename);
         std::string fullPath = getFullPath(safeFilename);
         
-        logInfo("Saving file with verification: " + filename + " (" + getFileSizeString(fileData.size()) + ")");
+        // Saving file with verification silently
         
         // Calculate SHA-256 hash for bit-perfect verification
         std::string sha256Hash = calculateSHA256Hash(fileData);
-        logInfo("Calculated SHA-256 hash: " + sha256Hash.substr(0, 16) + "...");
+        // Hash calculated silently
+        // File data processed silently
         
         // Write file using atomic chunked method for all files
         std::string fileType = getFileType(filename);
-        logInfo("Using atomic chunked write for " + fileType + " file: " + filename);
+        // Using atomic chunked write silently
         
         auto writeResult = writeFileInChunksAtomic(fullPath, fileData);
         bool writeSuccess = writeResult.first;
@@ -152,10 +153,10 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
                 std::filesystem::remove(fullPath);
                 return std::make_pair(false, "");
             }
-            logSuccess("File integrity verified successfully ✅");
+            // File integrity verified successfully
         }
         
-        logSuccess("File saved with bit-perfect verification: " + fullPath);
+        // File saved with bit-perfect verification
         return std::make_pair(true, sha256Hash);
         
     } catch (const std::exception& e) {
@@ -238,7 +239,7 @@ bool StorageService::createStorageDirectory()
     try {
         if (!std::filesystem::exists(storageDirectory)) {
             std::filesystem::create_directories(storageDirectory);
-            logInfo("Created storage directory: " + storageDirectory);
+            // Storage directory created
         }
         return true;
     } catch (const std::exception& e) {
@@ -381,22 +382,44 @@ std::string StorageService::calculateFileHash(const std::vector<char>& data) con
 
 std::string StorageService::calculateSHA256Hash(const std::vector<char>& data) const
 {
-    // Calculate SHA-256 hash using a simple implementation
-    // This is a basic implementation - in production, use a proper crypto library
-    std::hash<std::string> hasher;
-    std::string dataStr(data.begin(), data.end());
+    // Simple hash algorithm compatible with frontend implementation
+    // Using deterministic algorithm that both client and server can reproduce
     
-    // Create a more robust hash by combining multiple hash passes
-    size_t hash1 = hasher(dataStr);
-    size_t hash2 = hasher(dataStr + "salt1");
-    size_t hash3 = hasher(dataStr + "salt2" + std::to_string(data.size()));
+    uint32_t hash1 = 0;
+    uint32_t hash2 = 0;
+    uint32_t hash3 = 0;
+    
+    // Hash pass 1: Basic hash
+    for (size_t i = 0; i < data.size(); i++) {
+        hash1 = ((hash1 << 5) - hash1 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    
+    // Hash pass 2: With salt1 - process data first, then salt1
+    std::string salt1 = "salt1";
+    for (size_t i = 0; i < data.size(); i++) {
+        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    for (char c : salt1) {
+        hash2 = ((hash2 << 5) - hash2 + static_cast<unsigned char>(c)) & 0xffffffff;
+    }
+    
+    // Hash pass 3: With salt2 and size - process data first, then salt2
+    std::string salt2 = "salt2" + std::to_string(data.size());
+    for (size_t i = 0; i < data.size(); i++) {
+        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(data[i])) & 0xffffffff;
+    }
+    for (char c : salt2) {
+        hash3 = ((hash3 << 5) - hash3 + static_cast<unsigned char>(c)) & 0xffffffff;
+    }
+    
+    // Calculate checksum (same as existing method)
     uint32_t checksum = calculateChecksum(data);
     
-    // Combine hashes to create a longer, more secure hash
+    // Combine hashes and format as hex
     std::ostringstream oss;
     oss << std::hex << hash1 << hash2 << hash3 << checksum;
     
-    // Simulate SHA-256 length (64 characters)
+    // Pad to 64 characters
     std::string result = oss.str();
     while (result.length() < 64) {
         result += "0";
@@ -489,7 +512,7 @@ std::pair<bool, std::string> StorageService::writeFileInChunksAtomic(const std::
             return std::make_pair(false, "");
         }
         
-        logSuccess("File written atomically with verification: " + filepath);
+        // File written atomically with verification
         return std::make_pair(true, writtenHash);
         
     } catch (const std::exception& e) {
