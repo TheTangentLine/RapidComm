@@ -1,4 +1,5 @@
 #include "StorageService.hpp"
+#include "../http/BasePath.hpp"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -21,12 +22,18 @@
 // Default configuration
 static const size_t DEFAULT_MAX_FILE_SIZE = 2ULL * 1024 * 1024 * 1024; // 2GB
 static const size_t DEFAULT_CHUNK_SIZE = 1024 * 1024; // 1MB
-static const std::string DEFAULT_STORAGE_DIR = "./uploads/";
+
+// Helper to determine the project's root "uploads" directory
+static std::string getDefaultStorageDir() {
+    std::filesystem::path basePath = getBasePath(); // e.g., .../RapidComm/build/bin
+    std::filesystem::path projectRoot = basePath / ".." / ".."; // e.g., .../RapidComm/
+    return (projectRoot / "uploads/").lexically_normal().string();
+}
 
 // ----------------------------- Constructor/Destructor --------------------------------->
 
 StorageService::StorageService() 
-    : storageDirectory(DEFAULT_STORAGE_DIR),
+    : storageDirectory(getDefaultStorageDir()),
       maxFileSize(DEFAULT_MAX_FILE_SIZE),
       chunkSize(DEFAULT_CHUNK_SIZE),
       enableVerification(true)
@@ -36,7 +43,7 @@ StorageService::StorageService()
 }
 
 StorageService::StorageService(const std::string& storageDirectory) 
-    : storageDirectory(storageDirectory.empty() ? DEFAULT_STORAGE_DIR : storageDirectory),
+    : storageDirectory(storageDirectory.empty() ? getDefaultStorageDir() : storageDirectory),
       maxFileSize(DEFAULT_MAX_FILE_SIZE),
       chunkSize(DEFAULT_CHUNK_SIZE),
       enableVerification(true)
@@ -207,7 +214,7 @@ bool StorageService::deleteFile(const std::string& filename)
 
 void StorageService::setStorageDirectory(const std::string& directory)
 {
-    std::string newDir = directory.empty() ? DEFAULT_STORAGE_DIR : directory;
+    std::string newDir = directory.empty() ? getDefaultStorageDir() : directory;
     if (newDir.back() != '/') {
         newDir += '/';
     }
