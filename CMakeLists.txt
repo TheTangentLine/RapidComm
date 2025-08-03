@@ -104,6 +104,7 @@ endif()
 if(APPLE)
     # macOS specific settings
     target_compile_definitions(${PROJECT_NAME} PRIVATE _DARWIN_C_SOURCE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation")
 elseif(UNIX AND NOT APPLE)
     # Linux specific settings
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)

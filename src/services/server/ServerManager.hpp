@@ -2,30 +2,36 @@
 #define SERVER_MANAGER_HPP
 
 #include <atomic>
+#include <string>
 
-class Socket; // Forward declaration
+class Socket;
 
-class ServerManager
-{
+class ServerManager {
 public:
     ServerManager();
     ~ServerManager();
-    
+
     void startAllServers();
     void stopAllServers();
-    
-    static void setServerRunning(bool running);
+
+    void startMainServers();
+    void stopMainServers();
+
     static bool isServerRunning();
+    static void setServerRunning(bool running);
 
 private:
-    static std::atomic<bool> serverRunning;
-    
-    // Store socket pointers to close them during shutdown
-    Socket* frontendSocket;
-    Socket* backendSocket;
-    
     void runFrontendServer();
     void runBackendServer();
+    void runControlServer();
+    std::string getLocalIpAddress();
+
+    Socket* frontendSocket;
+    Socket* backendSocket;
+    Socket* controlSocket;
+
+    static std::atomic<bool> serverRunning;
+    static std::atomic<bool> mainServerRunning;
 };
 
-#endif
+#endif // SERVER_MANAGER_HPP
