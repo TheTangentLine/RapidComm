@@ -124,7 +124,7 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
         std::string safeFilename = getSafeFilename(filename);
         std::string fullPath = getFullPath(safeFilename);
         
-        logInfo("Saving file with verification: " + filename + " (" + getFileSizeString(fileData.size()) + ")");
+        // Saving file with verification silently
         
         // Calculate SHA-256 hash for bit-perfect verification
         std::string sha256Hash = calculateSHA256Hash(fileData);
