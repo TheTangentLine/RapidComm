@@ -1,6 +1,7 @@
 #include "ServerManager.hpp"
 #include "../socket/Socket.hpp"
 #include "../http/HttpHandler.hpp"
+#include "../config/ConfigManager.hpp"
 #include <iostream>
 #include <thread>
 #include <sys/socket.h>
@@ -41,7 +42,8 @@ void ServerManager::startAllServers() {
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Frontend: http://localhost:" << FRONTEND_PORT << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Backend:  http://localhost:" << BACKEND_PORT << COLOR_RESET << std::endl;
-    std::cout << COLOR_CYAN << "Storage:  ./uploads/" << COLOR_RESET << std::endl;
+    ConfigManager config;
+    std::cout << COLOR_CYAN << "Storage:  " << config.getStorageDirectory() << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;

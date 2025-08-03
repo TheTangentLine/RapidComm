@@ -15,7 +15,7 @@
 ConfigManager::ConfigManager() : configFilePath("../../config.env")
 {
     setDefaults();
-    loadConfig();
+    loadConfig(configFilePath);
 }
 
 ConfigManager::ConfigManager(const std::string& configFile) : configFilePath(configFile)

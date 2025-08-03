@@ -32,7 +32,7 @@ StorageService::StorageService()
       enableVerification(true)
 {
     createStorageDirectory();
-    logInfo("Storage service initialized with default configuration");
+    // Storage service initialized silently
 }
 
 StorageService::StorageService(const std::string& storageDirectory) 
@@ -46,12 +46,12 @@ StorageService::StorageService(const std::string& storageDirectory)
         this->storageDirectory += '/';
     }
     createStorageDirectory();
-    logInfo("Storage service initialized with directory: " + this->storageDirectory);
+    // Storage service initialized silently
 }
 
 StorageService::~StorageService() 
 {
-    logInfo("Storage service destroyed");
+    // Storage service destroyed silently
 }
 
 // ----------------------------- Main Storage Operations --------------------------------->
@@ -77,7 +77,7 @@ bool StorageService::saveFile(const std::string& filename, const std::vector<cha
         std::string safeFilename = getSafeFilename(filename);
         std::string fullPath = getFullPath(safeFilename);
         
-        logInfo("Saving file: " + filename + " (" + getFileSizeString(fileData.size()) + ")");
+        // Saving file silently
         
         // Write file using standard method
         std::ofstream file(fullPath, std::ios::binary);
@@ -94,7 +94,7 @@ bool StorageService::saveFile(const std::string& filename, const std::vector<cha
             return false;
         }
         
-        logSuccess("File saved successfully: " + fullPath);
+        // File saved successfully
         return true;
         
     } catch (const std::exception& e) {
@@ -239,7 +239,7 @@ bool StorageService::createStorageDirectory()
     try {
         if (!std::filesystem::exists(storageDirectory)) {
             std::filesystem::create_directories(storageDirectory);
-            logInfo("Created storage directory: " + storageDirectory);
+            // Storage directory created
         }
         return true;
     } catch (const std::exception& e) {
