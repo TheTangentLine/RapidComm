@@ -153,10 +153,10 @@ std::pair<bool, std::string> StorageService::saveFileWithVerification(const std:
                 std::filesystem::remove(fullPath);
                 return std::make_pair(false, "");
             }
-            logSuccess("File integrity verified successfully ✅");
+            // File integrity verified successfully
         }
         
-        logSuccess("File saved with bit-perfect verification: " + fullPath);
+        // File saved with bit-perfect verification
         return std::make_pair(true, sha256Hash);
         
     } catch (const std::exception& e) {
@@ -512,7 +512,7 @@ std::pair<bool, std::string> StorageService::writeFileInChunksAtomic(const std::
             return std::make_pair(false, "");
         }
         
-        logSuccess("File written atomically with verification: " + filepath);
+        // File written atomically with verification
         return std::make_pair(true, writtenHash);
         
     } catch (const std::exception& e) {
