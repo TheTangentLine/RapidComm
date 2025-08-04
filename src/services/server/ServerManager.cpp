@@ -8,6 +8,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <chrono>
 
 // Colors for terminal output
 #define COLOR_RED     "\033[0;31m"
@@ -19,10 +24,41 @@
 
 #define FRONTEND_PORT 3000
 #define BACKEND_PORT 8080
+#define CONTROL_PORT 8081
 
 std::atomic<bool> ServerManager::serverRunning(true);
+std::atomic<bool> ServerManager::mainServerRunning(false);
 
-ServerManager::ServerManager() : frontendSocket(nullptr), backendSocket(nullptr) {}
+std::string ServerManager::getLocalIpAddress() {
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        return "127.0.0.1";
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) continue;
+
+        int family = ifa->ifa_addr->sa_family;
+
+        if (family == AF_INET) { // We are looking for IPv4
+            if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) {
+                std::string ip(host);
+                if (ip != "127.0.0.1" && ip.rfind("169.254", 0) != 0) {
+                    freeifaddrs(ifaddr);
+                    return ip;
+                }
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return "127.0.0.1"; // Fallback
+}
+
+ServerManager::ServerManager() : frontendSocket(nullptr), backendSocket(nullptr), controlSocket(nullptr) {}
 
 ServerManager::~ServerManager() {
     stopAllServers();
@@ -33,46 +69,120 @@ void ServerManager::setServerRunning(bool running) {
 }
 
 bool ServerManager::isServerRunning() {
-    return serverRunning;
+    return mainServerRunning;
 }
 
 void ServerManager::startAllServers() {
+    std::thread controlThread(&ServerManager::runControlServer, this);
+    controlThread.detach(); 
+
+    while(serverRunning) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    std::cout << COLOR_GREEN << "All servers stopped ✅" << COLOR_RESET << std::endl;
+}
+
+void ServerManager::startMainServers() {
+    if (mainServerRunning) {
+        std::cout << COLOR_YELLOW << "Main servers are already running." << COLOR_RESET << std::endl;
+        return;
+    }
+
+    mainServerRunning = true;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
-    std::cout << COLOR_BLUE << "  RapidComm File Upload Server" << COLOR_RESET << std::endl;
+    std::cout << COLOR_BLUE << "  Starting RapidComm File Upload Server" << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
-    std::cout << COLOR_GREEN << "Frontend: http://localhost:" << FRONTEND_PORT << COLOR_RESET << std::endl;
+    std::cout << COLOR_GREEN << "Frontend: http://" << getLocalIpAddress() << ":" << FRONTEND_PORT << COLOR_RESET << std::endl;
     std::cout << COLOR_GREEN << "Backend:  http://localhost:" << BACKEND_PORT << COLOR_RESET << std::endl;
     ConfigManager config;
     std::cout << COLOR_CYAN << "Storage:  " << config.getStorageDirectory() << COLOR_RESET << std::endl;
     std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
-    std::cout << COLOR_YELLOW << "Press Ctrl+C to stop all servers" << COLOR_RESET << std::endl;
-    std::cout << COLOR_BLUE << "========================================" << COLOR_RESET << std::endl;
     std::cout.flush();
-    
+
     try {
         std::thread frontendThread(&ServerManager::runFrontendServer, this);
         std::thread backendThread(&ServerManager::runBackendServer, this);
-        
-        frontendThread.join();
-        backendThread.join();
-        
+        frontendThread.detach();
+        backendThread.detach();
     } catch (const std::exception& e) {
-        std::cerr << "[Main] Error starting servers: " << e.what() << std::endl;
-        throw;
+        std::cerr << "[Main] Error starting main servers: " << e.what() << std::endl;
+        mainServerRunning = false;
     }
-    
-    std::cout << COLOR_GREEN << "All servers stopped ✅" << COLOR_RESET << std::endl;
+}
+
+void ServerManager::stopMainServers() {
+    if (!mainServerRunning) {
+        std::cout << COLOR_YELLOW << "Main servers are not running." << COLOR_RESET << std::endl;
+        return;
+    }
+    mainServerRunning = false;
+
+    if (frontendSocket) {
+        close(frontendSocket->getServerSocket());
+        frontendSocket = nullptr;
+    }
+    if (backendSocket) {
+        close(backendSocket->getServerSocket());
+        backendSocket = nullptr;
+    }
+    std::cout << COLOR_GREEN << "Main servers stopping..." << COLOR_RESET << std::endl;
 }
 
 void ServerManager::stopAllServers() {
     serverRunning = false;
-    
-    // Close all server sockets to interrupt accept() calls
-    if (frontendSocket) {
-        close(frontendSocket->getServerSocket());
+    stopMainServers();
+    if (controlSocket) {
+        close(controlSocket->getServerSocket());
+        controlSocket = nullptr;
     }
-    if (backendSocket) {
-        close(backendSocket->getServerSocket());
+}
+
+void ServerManager::runControlServer() {
+    try {
+        Socket controlServer(CONTROL_PORT);
+        controlSocket = &controlServer;
+        controlServer.listenSocket();
+        
+        std::cout << COLOR_GREEN << "[Control] API Server started on port " << CONTROL_PORT << COLOR_RESET << std::endl;
+        
+        while (serverRunning) {
+            int clientSocket = accept(controlServer.getServerSocket(), nullptr, nullptr);
+            if (clientSocket < 0) {
+                if(serverRunning) perror("Control accept error");
+                continue;
+            }
+
+            HttpHandler handler(clientSocket, false);
+            std::string request = handler.parseRequest();
+            std::string method = handler.extractMethod(request);
+            std::string route = handler.extractRoute(request);
+            
+            // Required for CORS
+            if (method == "OPTIONS") {
+                handler.sendCorsResponse();
+                close(clientSocket);
+                continue;
+            }
+
+            if (method == "GET" && route == "/api/status") {
+                std::string ip = getLocalIpAddress();
+                std::string json = "{\"isRunning\":" + std::string(mainServerRunning ? "true" : "false") + ",\"ipAddress\":\"" + ip + "\"}";
+                handler.sendJsonResponse(json);
+            } else if (method == "POST" && route == "/api/start") {
+                startMainServers();
+                handler.sendJsonResponse("{\"status\":\"ok\",\"message\":\"Servers starting\"}");
+            } else if (method == "POST" && route == "/api/stop") {
+                stopMainServers();
+                handler.sendJsonResponse("{\"status\":\"ok\",\"message\":\"Servers stopping\"}");
+            } else {
+                handler.sendErrorResponse(404, "Not Found");
+            }
+            close(clientSocket);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Control] Server error: " << e.what() << std::endl;
+        controlSocket = nullptr;
     }
 }
 
@@ -85,20 +195,24 @@ void ServerManager::runFrontendServer() {
         std::cout << COLOR_GREEN << "[Frontend] Server started on port " << FRONTEND_PORT << COLOR_RESET << std::endl;
         std::cout.flush();
         
-        while (serverRunning) {
+        while (mainServerRunning) {
             int clientSocket = accept(frontendServer.getServerSocket(), nullptr, nullptr);
             
             if (clientSocket == -1) {
-                if (serverRunning) {
+                if (mainServerRunning) {
                     std::cerr << "[Frontend] Accept failed: " << strerror(errno) << std::endl;
                 }
-                break; // Exit loop on error
+                break;
             }
             
-            if (!serverRunning) break; // Check again after accept
+            if (!mainServerRunning) {
+                close(clientSocket);
+                break;
+            };
             
             HttpHandler httpHandler(clientSocket, true);
             httpHandler.handleRequest();
+             close(clientSocket);
         }
         
         frontendSocket = nullptr;
@@ -118,20 +232,24 @@ void ServerManager::runBackendServer() {
         std::cout << COLOR_GREEN << "[Backend] Server started on port " << BACKEND_PORT << COLOR_RESET << std::endl;
         std::cout.flush();
         
-        while (serverRunning) {
+        while (mainServerRunning) {
             int clientSocket = accept(backendServer.getServerSocket(), nullptr, nullptr);
             
             if (clientSocket == -1) {
-                if (serverRunning) {
+                if (mainServerRunning) {
                     std::cerr << "[Backend] Accept failed: " << strerror(errno) << std::endl;
                 }
-                break; // Exit loop on error
+                break;
             }
             
-            if (!serverRunning) break; // Check again after accept
+             if (!mainServerRunning) {
+                close(clientSocket);
+                break;
+            };
             
             HttpHandler httpHandler(clientSocket, false);
             httpHandler.handleRequest();
+             close(clientSocket);
         }
         
         backendSocket = nullptr;
@@ -141,4 +259,3 @@ void ServerManager::runBackendServer() {
         backendSocket = nullptr;
     }
 }
-

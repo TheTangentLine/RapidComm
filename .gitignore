@@ -157,6 +157,8 @@ vgcore.*
 uploads/
 uploads/*
 *.uploaded
+config.env
+.env
 
 # Test files
 test-upload.*

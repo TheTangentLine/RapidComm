@@ -11,6 +11,7 @@
 #include <cstring>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "BasePath.hpp"
 
 // Colors for terminal output
 #define COLOR_RED     "\033[0;31m"
@@ -184,6 +185,11 @@ std::string HttpHandler::extractMethod(const std::string &request)
 std::string HttpHandler::getHtmlContent(const std::string &route)
 {
     std::ifstream file(route);
+    if (!file) {
+        // If file doesn't exist, return an error message.
+        // This is better than returning an empty string.
+        return "<h1>Error 404: File Not Found</h1><p>Could not open: " + route + "</p>";
+    }
     std::stringstream buffer;
     buffer << file.rdbuf();
 
@@ -191,6 +197,93 @@ std::string HttpHandler::getHtmlContent(const std::string &route)
 }
 
 // ---------------------------- File Upload Handling ------------------------->
+
+std::string HttpHandler::determineFileType(const std::string &extension)
+{
+    // Video files
+    if (extension == "mp4" || extension == "avi" || extension == "mov" || 
+        extension == "wmv" || extension == "flv" || extension == "webm" || 
+        extension == "mkv" || extension == "m4v" || extension == "3gp" || 
+        extension == "ogv" || extension == "ts" || extension == "mts" || 
+        extension == "m2ts" || extension == "vob" || extension == "asf") {
+        return "video";
+    }
+    
+    // Audio files
+    if (extension == "mp3" || extension == "wav" || extension == "flac" || 
+        extension == "aac" || extension == "ogg" || extension == "wma" || 
+        extension == "m4a" || extension == "opus") {
+        return "audio";
+    }
+    
+    // Image files
+    if (extension == "jpg" || extension == "jpeg" || extension == "png" || 
+        extension == "gif" || extension == "bmp" || extension == "webp" || 
+        extension == "svg" || extension == "tiff" || extension == "ico") {
+        return "image";
+    }
+    
+    // Document files
+    if (extension == "pdf" || extension == "doc" || extension == "docx" || 
+        extension == "xls" || extension == "xlsx" || extension == "ppt" || 
+        extension == "pptx" || extension == "txt" || extension == "rtf" || 
+        extension == "odt" || extension == "ods" || extension == "odp") {
+        return "document";
+    }
+    
+    // Archive files
+    if (extension == "zip" || extension == "rar" || extension == "7z" || 
+        extension == "tar" || extension == "gz" || extension == "bz2" || 
+        extension == "xz" || extension == "dmg" || extension == "iso") {
+        return "archive";
+    }
+    
+    // Programming language files
+    if (extension == "cpp" || extension == "c" || extension == "cc" || 
+        extension == "cxx" || extension == "h" || extension == "hpp" || 
+        extension == "hxx" || extension == "java" || extension == "py" || 
+        extension == "js" || extension == "ts" || extension == "html" || 
+        extension == "css" || extension == "php" || extension == "rb" || 
+        extension == "go" || extension == "rs" || extension == "swift" || 
+        extension == "kt" || extension == "scala" || extension == "pl" || 
+        extension == "sh" || extension == "bash" || extension == "zsh" || 
+        extension == "fish" || extension == "ps1" || extension == "bat" || 
+        extension == "cmd" || extension == "r" || extension == "m" || 
+        extension == "mm" || extension == "asm" || extension == "s") {
+        return "code";
+    }
+    
+    // Web files
+    if (extension == "xml" || extension == "json" || extension == "yaml" || 
+        extension == "yml" || extension == "toml" || extension == "ini" || 
+        extension == "cfg" || extension == "conf") {
+        return "config";
+    }
+    
+    // Binary executables
+    if (extension == "exe" || extension == "dll" || extension == "so" || 
+        extension == "dylib" || extension == "app" || extension == "deb" || 
+        extension == "rpm" || extension == "msi" || extension == "pkg" || 
+        extension == "apk" || extension == "ipa") {
+        return "binary";
+    }
+    
+    // Font files
+    if (extension == "ttf" || extension == "otf" || extension == "woff" || 
+        extension == "woff2" || extension == "eot") {
+        return "font";
+    }
+    
+    // 3D/CAD files
+    if (extension == "obj" || extension == "fbx" || extension == "dae" || 
+        extension == "3ds" || extension == "blend" || extension == "dwg" || 
+        extension == "dxf" || extension == "step" || extension == "stp") {
+        return "3d";
+    }
+    
+    // Default to generic file
+    return "file";
+}
 
 void HttpHandler::handleFileUpload(const std::string &request)
 {
@@ -213,14 +306,7 @@ void HttpHandler::handleFileUpload(const std::string &request)
             std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
         }
         
-        // Check if it's a video file
-        bool isVideo = (fileExtension == "mp4" || fileExtension == "avi" || fileExtension == "mov" || 
-                       fileExtension == "wmv" || fileExtension == "flv" || fileExtension == "webm" || 
-                       fileExtension == "mkv" || fileExtension == "m4v" || fileExtension == "3gp" || 
-                       fileExtension == "ogv" || fileExtension == "ts" || fileExtension == "mts" || 
-                       fileExtension == "m2ts" || fileExtension == "vob" || fileExtension == "asf");
-        
-        std::string fileType = isVideo ? "video" : "file";
+        std::string fileType = determineFileType(fileExtension);
         
         // Save file using storage service with config
         ConfigManager config;
@@ -229,7 +315,13 @@ void HttpHandler::handleFileUpload(const std::string &request)
         auto saveSuccess = storage.saveFileWithVerification(filename, fileData);
         
         if (saveSuccess.first) {
-            std::string message = isVideo ? "Video uploaded successfully" : "File uploaded successfully";
+            std::string message = (fileType == "video") ? "Video uploaded successfully" : 
+                                 (fileType == "audio") ? "Audio uploaded successfully" :
+                                 (fileType == "image") ? "Image uploaded successfully" :
+                                 (fileType == "document") ? "Document uploaded successfully" :
+                                 (fileType == "code") ? "Code file uploaded successfully" :
+                                 (fileType == "binary") ? "Binary file uploaded successfully" :
+                                 "File uploaded successfully";
             std::cout << COLOR_GREEN << "[Backend] ✅ " << filename << COLOR_RESET << std::endl;
             
             sendJsonResponse("{\"status\":\"success\",\"message\":\"" + message + "\",\"filename\":\"" + filename + "\",\"type\":\"" + fileType + "\",\"size\":" + std::to_string(fileData.size()) + "}");
@@ -397,6 +489,27 @@ void HttpHandler::sendErrorResponse(int statusCode, const std::string &message)
     sendJsonResponse(json, statusCode);
 }
 
+void HttpHandler::serveFile(const std::string& path, const std::string& contentType) {
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file) {
+        sendErrorResponse(404, "File Not Found");
+        return;
+    }
+
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    file.close();
+    const std::string contentStr = contents.str();
+
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: " + contentType + "\r\n";
+    response += "Content-Length: " + std::to_string(contentStr.length()) + "\r\n";
+    response += "Connection: close\r\n\r\n";
+    response += contentStr;
+
+    send(clientSocket, response.c_str(), response.length(), 0);
+}
+
 std::map<std::string, std::string> HttpHandler::parseHeaders(const std::string &request)
 {
     std::map<std::string, std::string> headers;
@@ -487,3 +600,4 @@ HttpHandler::~HttpHandler()
 {
     close(clientSocket);
 }
+
