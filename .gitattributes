@@ -1,0 +1,15 @@
+# Override GitHub language detection
+*.cpp linguist-language=C++
+*.hpp linguist-language=C++
+*.h linguist-language=C++
+
+# Exclude duplicate HTML files from language stats
+rapid-comm-desktop/src-tauri/Resources/ linguist-vendored
+
+# Mark generated/bundled files as vendored
+rapid-comm-desktop/src-tauri/Resources/interface/ linguist-generated
+
+# Ensure main languages are properly detected
+src/services/ linguist-language=C++
+src/interface/js/ linguist-language=JavaScript
+src/interface/styles/ linguist-language=CSS
