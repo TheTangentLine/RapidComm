@@ -1,0 +1,534 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap");
+
+:root {
+  --void-black: #0a0a0b;
+  --deep-purple: #1a0d2e;
+  --neon-cyan: #00f5ff;
+  --neon-pink: #ff0080;
+  --neon-yellow: #ffff00;
+  --void-gray: #1a1a1a;
+  --text-glow: rgba(0, 245, 255, 0.8);
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background: var(--void-black);
+  color: white;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: none;
+}
+
+/* Animated void background */
+.void-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background: radial-gradient(
+      circle at 20% 20%,
+      var(--deep-purple) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(255, 0, 128, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 40% 60%,
+      rgba(0, 245, 255, 0.05) 0%,
+      transparent 50%
+    );
+  animation: voidShift 15s ease-in-out infinite;
+}
+
+@keyframes voidShift {
+  0%, 100% {
+    background: radial-gradient(
+        circle at 20% 20%,
+        var(--deep-purple) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 80%,
+        rgba(255, 0, 128, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 60%,
+        rgba(0, 245, 255, 0.05) 0%,
+        transparent 50%
+      );
+  }
+  50% {
+    background: radial-gradient(
+        circle at 80% 20%,
+        var(--deep-purple) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 20% 80%,
+        rgba(255, 0, 128, 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 60% 40%,
+        rgba(0, 245, 255, 0.08) 0%,
+        transparent 50%
+      );
+  }
+}
+
+/* Floating void particles */
+.void-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.void-particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  opacity: 0;
+  animation: voidFloat 20s infinite linear;
+  filter: blur(0.5px);
+}
+
+@keyframes voidFloat {
+  0% {
+    transform: translateY(100vh) translateX(0) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(200px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Main content container */
+.nothing-container {
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  max-width: 90vw;
+  animation: fadeInUp 2s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Main heading with glitch effect */
+.main-heading {
+  font-family: "Orbitron", monospace;
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 900;
+  background: linear-gradient(
+    45deg,
+    var(--neon-cyan),
+    var(--neon-pink),
+    var(--neon-yellow),
+    var(--neon-cyan)
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease-in-out infinite,
+    textGlow 2s ease-in-out infinite alternate;
+  margin-bottom: 2rem;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s var(--transition-smooth);
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes textGlow {
+  from {
+    filter: drop-shadow(0 0 10px var(--text-glow));
+    text-shadow: 0 0 20px var(--text-glow);
+  }
+  to {
+    filter: drop-shadow(0 0 30px var(--text-glow));
+    text-shadow: 0 0 40px var(--text-glow);
+  }
+}
+
+/* Glitch effect on hover */
+.main-heading:hover {
+  animation: glitchText 0.3s ease-in-out;
+}
+
+@keyframes glitchText {
+  0%, 100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 3rem;
+  animation: subtlePulse 4s ease-in-out infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Interactive void buttons */
+.void-actions {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+}
+
+.void-btn {
+  padding: 1rem 2rem;
+  background: transparent;
+  border: 2px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s var(--transition-smooth);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.void-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--neon-cyan),
+    transparent
+  );
+  transition: left 0.5s var(--transition-smooth);
+}
+
+.void-btn:hover::before {
+  left: 100%;
+}
+
+.void-btn:hover {
+  color: var(--void-black);
+  background: var(--neon-cyan);
+  box-shadow: 0 0 30px var(--neon-cyan),
+    inset 0 0 30px rgba(0, 245, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+.void-btn:active {
+  transform: translateY(-1px);
+}
+
+.void-btn:focus {
+  outline: 2px solid var(--neon-pink);
+  outline-offset: 2px;
+}
+
+/* Floating elements */
+.floating-elements {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-shape {
+  position: absolute;
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  animation: floatAround 20s infinite linear;
+}
+
+.floating-shape:nth-child(1) {
+  width: 100px;
+  height: 100px;
+  top: 20%;
+  left: 10%;
+  animation-delay: -5s;
+  border-radius: 50%;
+}
+
+.floating-shape:nth-child(2) {
+  width: 60px;
+  height: 60px;
+  top: 70%;
+  right: 15%;
+  animation-delay: -10s;
+  transform: rotate(45deg);
+}
+
+.floating-shape:nth-child(3) {
+  width: 80px;
+  height: 80px;
+  top: 30%;
+  right: 20%;
+  animation-delay: -15s;
+  border-radius: 50%;
+  border-color: rgba(255, 0, 128, 0.3);
+}
+
+@keyframes floatAround {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(50px, -30px) rotate(90deg);
+  }
+  50% {
+    transform: translate(-20px, -60px) rotate(180deg);
+  }
+  75% {
+    transform: translate(-40px, 20px) rotate(270deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
+  }
+}
+
+/* Custom cursor */
+.custom-cursor {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  animation: cursorPulse 2s ease-in-out infinite;
+  opacity: 0.8;
+  mix-blend-mode: screen;
+}
+
+@keyframes cursorPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+.cursor-trail {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: var(--neon-pink);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: trailFade 0.5s ease-out forwards;
+}
+
+@keyframes trailFade {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+}
+
+/* Hidden message */
+.hidden-message {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0;
+  animation: mysteriousAppear 1s ease-in-out 5s forwards;
+}
+
+@keyframes mysteriousAppear {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 0.6;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  body {
+    cursor: auto;
+  }
+
+  .custom-cursor {
+    display: none;
+  }
+
+  .void-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .void-btn {
+    width: 200px;
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .floating-shape {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --neon-cyan: #00ffff;
+    --neon-pink: #ff00ff;
+    --neon-yellow: #ffff00;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .void-particles,
+  .floating-elements {
+    display: none;
+  }
+  
+  .void-canvas {
+    animation: none;
+    background: var(--deep-purple);
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .void-canvas,
+  .void-particles,
+  .floating-elements,
+  .custom-cursor {
+    display: none !important;
+  }
+  
+  .main-heading {
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+    color: black !important;
+    animation: none !important;
+  }
+}
