@@ -18,7 +18,7 @@ A high-performance C++ file sharing server with both web and desktop interfaces,
 │   Web Browser   │───▶│   HTTP Server   │───▶│ Storage Service │
 │  (Frontend UI)  │    │ (Backend API)   │    │ (File Storage)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-       Port 80               Port 8080        Project/uploads/
+        Port 3000             Port 8080        Project/uploads/
 
 ┌─────────────────┐    ┌─────────────────┐
 │  Desktop App    │───▶│  Control Server │
@@ -28,7 +28,7 @@ A high-performance C++ file sharing server with both web and desktop interfaces,
 
 ## Quick Start
 
-Then open: http://localhost:80
+Then open: http://localhost:3000 or http://YOUR_IP:3000
 
 ### Desktop Application (macOS)
 
@@ -50,10 +50,9 @@ Then open: http://localhost:80
 Edit `config.env`:
 
 ```bash
-FRONTEND_PORT=80
+FRONTEND_PORT=3000
 BACKEND_PORT=8080
-STORAGE_DIRECTORY=/Users/khatruong/Downloads/uploads
-STORAGE_MAX_FILE_SIZE=2147483648
+STORAGE_DIRECTORY=/TO/YOUR/FOLDER
 ```
 
 ## Requirements
@@ -65,7 +64,7 @@ STORAGE_MAX_FILE_SIZE=2147483648
 ## Network Sharing
 
 1. Start the server
-2. Share your IP address (shown in desktop app): `http://YOUR_IP:80`
+2. Share your IP address (shown in desktop app): `http://YOUR_IP:3000`
 3. Same network required
 
 ## License
