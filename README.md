@@ -1,72 +1,188 @@
-# RapidComm - Fast File Sharing Application
+# RapidComm v1.0.0
 
-A high-performance C++ file sharing server with both web and desktop interfaces, optimized for speed and multiple file uploads.
+A modern, high-performance file sharing application with an intuitive web interface and powerful backend server.
 
-## Features
+## 3 Key Strengths
 
-- Multiple file uploads with real-time progress tracking
-- Support for 70+ file types including programming languages and binary files
-- Web interface (browser access) and desktop application (macOS)
-- Network sharing across devices on the same network
-- File integrity verification and atomic operations
-- External configuration via config.env
+1. **Lightning-Fast Multi-File Uploads** - Upload multiple files simultaneously with real-time progress tracking and automatic retry mechanisms
+2. **Zero-Configuration Setup** - Start sharing files instantly with a single command - no complex installation or setup required  
+3. **Universal Compatibility** - Works on any device with a web browser, supports 70+ file types, and enables seamless network sharing
+
+## Download & Installation
+
+### Quick Start (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/RapidComm.git
+cd RapidComm
+```
+
+2. Build and start the server:
+```bash
+make
+```
+
+3. Open your browser and navigate to:
+   - Local access: `http://localhost:3000`
+   - Network sharing: `http://YOUR_IP:3000`
+
+### Manual Build
+
+If you prefer to build manually:
+
+```bash
+# Build the C++ backend
+mkdir build && cd build
+cmake ..
+make
+
+# Start the server
+cd ..
+./build/rapidcomm-server
+```
+
+## How to Use
+
+### Upload Files
+
+1. **Web Interface**: Open `http://localhost:3000` in any modern browser
+2. **Drag & Drop**: Simply drag files from your computer into the upload area
+3. **Browse Files**: Click the upload area to select files using the file dialog
+4. **Multiple Files**: Select multiple files at once for batch uploading
+5. **Progress Tracking**: Watch real-time upload progress for each file
+
+### Network Sharing
+
+1. Start RapidComm on your computer
+2. Find your IP address (displayed in terminal or use `ifconfig`/`ipconfig`)
+3. Share the URL: `http://YOUR_IP:3000`
+4. Others on the same network can access and upload files
+
+### Supported File Types
+
+RapidComm supports virtually any file type including:
+- **Code**: .cpp, .py, .js, .html, .css, .java, .go, .rs
+- **Documents**: .pdf, .docx, .txt, .md, .xlsx
+- **Media**: .mp4, .mp3, .png, .jpg, .gif, .svg
+- **Archives**: .zip, .tar, .gz, .rar
+- **Applications**: .exe, .app, .dmg, .deb
+
+## Configuration
+
+Customize RapidComm by editing `config.env`:
+
+```bash
+# Server ports
+FRONTEND_PORT=3000
+BACKEND_PORT=8080
+
+# File storage location
+STORAGE_DIRECTORY=/path/to/your/upload/folder
+
+# Upload limits (optional)
+MAX_FILE_SIZE=100MB
+MAX_CONCURRENT_UPLOADS=10
+```
+
+## System Requirements
+
+- **Operating System**: Linux, macOS, or Windows
+- **Compiler**: C++17 compatible compiler (GCC 7+, Clang 6+, MSVC 2019+)
+- **Build Tools**: Make or CMake
+- **Browser**: Any modern browser with ES6 module support
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Browser   │───▶│   HTTP Server   │───▶│ Storage Service │
-│  (Frontend UI)  │    │ (Backend API)   │    │ (File Storage)  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        Port 3000             Port 8080        Project/uploads/
-
-┌─────────────────┐    ┌─────────────────┐
-│  Desktop App    │───▶│  Control Server │
-│ (Admin Panel)   │    │   (Port 8081)   │
-└─────────────────┘    └─────────────────┘
+Web Browser ──→ HTTP Server ──→ File Storage
+(Port 3000)     (Port 8080)     (uploads/)
 ```
 
-## Quick Start
+The application consists of:
+- **Frontend**: Modern HTML5/CSS3/ES6 web interface
+- **Backend**: High-performance C++ HTTP server
+- **Storage**: Configurable file storage with integrity verification
 
-Then open: http://localhost:3000 or http://YOUR_IP:3000
+## Features
 
-### Desktop Application (macOS)
+- **Real-time Progress Tracking**: See upload progress with byte-level precision
+- **File Integrity Verification**: Automatic hash verification ensures file integrity
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Accessibility**: Full keyboard navigation and screen reader support
+- **Error Recovery**: Automatic retry on network failures
+- **Drag & Drop**: Intuitive file selection with visual feedback
+- **Multi-browser Support**: Compatible with Chrome, Firefox, Safari, and Edge
+
+## Troubleshooting
+
+### Common Issues
+
+**Port Already in Use**
+```bash
+# Change ports in config.env
+FRONTEND_PORT=3001
+BACKEND_PORT=8081
+```
+
+**Permission Denied**
+```bash
+# Ensure write permissions for upload directory
+chmod 755 uploads/
+```
+
+**Firewall Blocking Network Access**
+```bash
+# Allow ports through firewall (Linux/macOS)
+sudo ufw allow 3000
+sudo ufw allow 8080
+```
+
+## Development
+
+### Building from Source
 
 ```bash
-./build.sh
-./start-tauri-dev.sh
+# Clone repository
+git clone https://github.com/yourusername/RapidComm.git
+cd RapidComm
+
+# Build backend
+make clean && make
+
+# Run tests (if available)
+make test
 ```
 
-## Usage
+### Project Structure
 
-**Web Interface**: Select single or multiple files via click/drag-and-drop. Each file uploads individually with progress tracking.
-
-**Desktop App**: Control server start/stop, view network IP for sharing, and monitor server status.
-
-**Supported Files**: Code (.cpp, .py, .js), media (.mp4, .png, .mp3), documents (.pdf, .txt), archives (.zip), binaries (.exe, .app), and more.
-
-## Configuration
-
-Edit `config.env`:
-
-```bash
-FRONTEND_PORT=3000
-BACKEND_PORT=8080
-STORAGE_DIRECTORY=/TO/YOUR/FOLDER
+```
+RapidComm/
+├── src/
+│   ├── interface/          # Web frontend
+│   │   ├── index.html      # Main upload page
+│   │   ├── styles/         # CSS stylesheets
+│   │   └── js/             # JavaScript modules
+│   └── services/           # C++ backend
+├── uploads/                # File storage directory
+└── config.env            # Configuration file
 ```
 
-## Requirements
+## Contributing
 
-- C++17 compiler and Make
-- Node.js and Rust (for desktop app)
-- Linux, macOS, or Windows
-
-## Network Sharing
-
-1. Start the server
-2. Share your IP address (shown in desktop app): `http://YOUR_IP:3000`
-3. Same network required
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
 ## License
 
-MIT License
+MIT License - see LICENSE file for details
+
+## Version History
+
+- **v1.0.0** - Initial release with modern web interface and modular architecture
+- Complete refactoring of frontend with ES6 modules
+- Enhanced accessibility and performance optimizations
+- Comprehensive error handling and retry mechanisms
