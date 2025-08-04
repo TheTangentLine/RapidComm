@@ -1,6 +1,6 @@
 # RapidComm v1.0.0
 
-A modern, high-performance file sharing application with an intuitive web interface and powerful backend server.
+A modern, high-performance **C++ file sharing server** with an intuitive web interface and lightning-fast upload capabilities.
 
 ## 3 Key Strengths
 
@@ -100,9 +100,11 @@ Web Browser ──→ HTTP Server ──→ File Storage
 ```
 
 The application consists of:
-- **Frontend**: Modern HTML5/CSS3/ES6 web interface
-- **Backend**: High-performance C++ HTTP server
+- **Backend (C++)**: High-performance HTTP server with file upload processing (2,111 lines)
+- **Frontend (Web)**: Modern HTML5/CSS3/ES6 modular interface
 - **Storage**: Configurable file storage with integrity verification
+
+**Primary Language**: C++ (backend server handles all file operations, networking, and storage)
 
 ## Features
 
