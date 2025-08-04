@@ -1,15 +1,46 @@
-# Override GitHub language detection
+# GitHub Language Detection Override
+# Force C++ as primary language
+
+# Mark C++ backend as the main codebase
 *.cpp linguist-language=C++
 *.hpp linguist-language=C++
 *.h linguist-language=C++
+src/services/** linguist-language=C++
 
-# Exclude duplicate HTML files from language stats
-rapid-comm-desktop/src-tauri/Resources/ linguist-vendored
+# EXCLUDE desktop app resources (contains 3,306 lines of duplicate HTML)
+rapid-comm-desktop/ linguist-vendored
+rapid-comm-desktop/** linguist-vendored
 
-# Mark generated/bundled files as vendored
-rapid-comm-desktop/src-tauri/Resources/interface/ linguist-generated
+# Exclude all generated/bundled desktop files from language stats
+rapid-comm-desktop/src-tauri/Resources/ linguist-generated
+rapid-comm-desktop/src-tauri/Resources/** linguist-generated
 
-# Ensure main languages are properly detected
+# Exclude build files and dependencies
+build/ linguist-vendored
+uploads/ linguist-vendored
+node_modules/ linguist-vendored
+
+# CORE APPLICATION CODE (C++ backend is primary)
 src/services/ linguist-language=C++
-src/interface/js/ linguist-language=JavaScript
+src/services/** linguist-language=C++
+
+# Frontend code (secondary to C++ backend)
+src/interface/js/app.js linguist-language=JavaScript
+src/interface/js/config.js linguist-language=JavaScript  
+src/interface/js/upload.js linguist-language=JavaScript
+src/interface/js/ui.js linguist-language=JavaScript
+src/interface/js/utils.js linguist-language=JavaScript
+src/interface/js/animations.js linguist-language=JavaScript
+
+# Mark void page as demo/documentation (not core functionality)
+src/interface/js/void-*.js linguist-documentation
+src/interface/nothingToExplore.html linguist-documentation
+
+# Build system files (boost C++ ecosystem)
+CMakeLists.txt linguist-language=CMake
+Makefile linguist-language=Makefile
+*.cmake linguist-language=CMake
+
+# Main interface only
+src/interface/index.html linguist-language=HTML
 src/interface/styles/ linguist-language=CSS
