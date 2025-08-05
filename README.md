@@ -10,37 +10,16 @@ A modern, high-performance **C++ file sharing server** with an intuitive web int
 
 ## Download & Installation
 
-### Quick Start (Recommended)
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/RapidComm.git
 cd RapidComm
+./RapidCommDesktop.sh
 ```
 
-2. Build and start the server:
-```bash
-make
-```
-
-3. Open your browser and navigate to:
+2. Open your browser and navigate to:
    - Local access: `http://localhost:3000`
    - Network sharing: `http://YOUR_IP:3000`
-
-### Manual Build
-
-If you prefer to build manually:
-
-```bash
-# Build the C++ backend
-mkdir build && cd build
-cmake ..
-make
-
-# Start the server
-cd ..
-./build/rapidcomm-server
-```
 
 ## How to Use
 
