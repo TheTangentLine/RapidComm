@@ -1,6 +1,6 @@
 # RapidComm v1.0.0
 
-A modern, high-performance **C++ file sharing server** with an intuitive web interface and lightning-fast upload capabilities.
+ A modern, high-performance **C++ file sharing server** with an intuitive web interface and lightning-fast upload capabilities.
 
 ## 3 Key Strengths
 
